@@ -1,0 +1,1751 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Vigil</title>
+
+<!-- Google Fonts: Cormorant Garamond -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap" rel="stylesheet">
+
+<!-- ==================== STYLES ==================== -->
+<style>
+  /* --- Reset & Base --- */
+  *, *::before, *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    background: #0a0015;
+    color: #fffef0;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    touch-action: none;
+  }
+
+  /* --- Location Overlay --- */
+  #location-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(ellipse at 50% 40%, #0d1b4b 0%, #0a0015 70%);
+    opacity: 1;
+    transition: opacity 0.8s ease;
+  }
+
+  #location-overlay.hidden {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  #location-overlay p {
+    font-style: italic;
+    font-weight: 300;
+    font-size: 1.25rem;
+    text-align: center;
+    max-width: 280px;
+    line-height: 1.6;
+    color: #fffef0;
+    margin-bottom: 2.5rem;
+  }
+
+  #location-overlay button {
+    background: none;
+    border: none;
+    color: #fffef0;
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    cursor: pointer;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+
+  #location-overlay .allow-btn {
+    font-size: 0.95rem;
+    font-weight: 500;
+    margin-bottom: 1.5rem;
+    padding: 0.5rem 1rem;
+    transition: opacity 0.3s;
+  }
+
+  #location-overlay .allow-btn:hover {
+    opacity: 0.7;
+  }
+
+  #location-overlay .skip-btn {
+    font-size: 0.75rem;
+    font-weight: 300;
+    opacity: 0.45;
+    transition: opacity 0.3s;
+  }
+
+  #location-overlay .skip-btn:hover {
+    opacity: 0.7;
+  }
+
+  /* --- Star Canvas (real stars rendered via Canvas 2D) --- */
+  #sky-canvas {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+  }
+
+  /* --- Constellation SVG Overlay --- */
+  #constellation-layer {
+    position: fixed;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  /* --- Moon Container --- */
+  #moon-container {
+    position: fixed;
+    z-index: 3;
+    left: 50%;
+    top: 40%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+  }
+
+  #moon-canvas {
+    display: block;
+  }
+
+  /* Moon glow aura — sized dynamically by JS */
+  #moon-glow {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+  }
+
+  /* Moon pulse animation */
+  @keyframes moonPulse {
+    0%, 100% { transform: translate(-50%, -50%) scale(1.0); }
+    50% { transform: translate(-50%, -50%) scale(1.03); }
+  }
+
+  #moon-container {
+    animation: moonPulse 4s ease-in-out infinite;
+  }
+
+  /* --- Constellation star twinkle --- */
+  @keyframes twinkle {
+    0%, 100% { opacity: 0.7; }
+    50% { opacity: 1.0; }
+  }
+
+  .constellation-star {
+    fill: #fffef0;
+    animation: twinkle 3s ease-in-out infinite;
+  }
+
+  .constellation-star:nth-child(odd) {
+    animation-duration: 4s;
+    animation-delay: -1.5s;
+  }
+
+  .constellation-line {
+    stroke: #fffef0;
+    stroke-width: 0.5;
+    opacity: 0.3;
+  }
+
+  /* --- Tab Navigation --- */
+  #tab-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    height: 60px;
+    padding-bottom: env(safe-area-inset-bottom, 0);
+    border-top: 0.5px solid rgba(255, 255, 255, 0.15);
+  }
+
+  .tab-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    cursor: pointer;
+    transition: opacity 0.3s, transform 0.3s;
+  }
+
+  .tab-icon svg {
+    width: 22px;
+    height: 22px;
+    fill: none;
+    stroke: #8090a8;
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    opacity: 0.4;
+    transition: all 0.3s ease;
+  }
+
+  .tab-icon.active svg {
+    stroke: #fffef0;
+    opacity: 1;
+    transform: scale(1.15);
+  }
+
+  /* --- View Containers --- */
+  .view {
+    position: fixed;
+    inset: 0;
+    z-index: 5;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+  }
+
+  .view.active {
+    display: flex;
+  }
+</style>
+</head>
+<body>
+
+<!-- ==================== LOCATION OVERLAY ==================== -->
+<div id="location-overlay">
+  <p>To read your sky, Vigil needs to know where you are</p>
+  <button class="allow-btn" onclick="requestLocation()">Allow Location</button>
+  <button class="skip-btn" onclick="skipLocation()">or continue without</button>
+</div>
+
+<!-- ==================== SKY CANVAS (2D — real stars) ==================== -->
+<canvas id="sky-canvas"></canvas>
+
+<!-- ==================== CONSTELLATION SVG OVERLAY ==================== -->
+<svg id="constellation-layer" xmlns="http://www.w3.org/2000/svg"></svg>
+
+<!-- ==================== MOON ==================== -->
+<div id="moon-container">
+  <div id="moon-glow"></div>
+  <canvas id="moon-canvas"></canvas>
+</div>
+
+<!-- ==================== TAB BAR ==================== -->
+<nav id="tab-bar">
+  <div class="tab-icon active" data-tab="sky" onclick="switchTab('sky')">
+    <svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+  </div>
+  <div class="tab-icon" data-tab="day" onclick="switchTab('day')">
+    <svg viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="5"/>
+      <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+      <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+    </svg>
+  </div>
+  <div class="tab-icon" data-tab="nature" onclick="switchTab('nature')">
+    <svg viewBox="0 0 24 24">
+      <path d="M17 8C8 10 5.9 16.17 3.82 21.34l1.89.66L7 19c4-4 7-5 11-6 4.17-1 6-4 6-8-2 0-5 .5-7 3z"/>
+      <path d="M2 22l1-1"/>
+    </svg>
+  </div>
+  <div class="tab-icon" data-tab="today" onclick="switchTab('today')">
+    <svg viewBox="0 0 24 24">
+      <path d="M18 11V6a2 2 0 0 0-4 0v1a2 2 0 0 0-4 0v1a2 2 0 0 0-4 0v5"/>
+      <path d="M6 13v-1a2 2 0 0 0-2 2v1a8 8 0 0 0 16 0v-3a2 2 0 0 0-2-2"/>
+    </svg>
+  </div>
+  <div class="tab-icon" data-tab="settings" onclick="switchTab('settings')">
+    <svg viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="3"/>
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+    </svg>
+  </div>
+</nav>
+
+<script>
+/* ============================================================
+   VIGIL — A Pagan Nature Almanac
+   Stage 2: Real Data
+   ============================================================ */
+
+// Global data object — populated by init, logged to console
+window.VIGIL = {};
+
+/* ==================== UTILS ==================== */
+
+const DEG = Math.PI / 180;
+const RAD = 180 / Math.PI;
+
+function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+
+function getStoredLocation() {
+  const lat = localStorage.getItem('vigil_lat');
+  const lon = localStorage.getItem('vigil_lon');
+  if (lat && lon) return { lat: parseFloat(lat), lon: parseFloat(lon) };
+  return null;
+}
+
+function storeLocation(lat, lon) {
+  localStorage.setItem('vigil_lat', lat);
+  localStorage.setItem('vigil_lon', lon);
+}
+
+/** Julian Date from a JS Date object. */
+function toJD(date) {
+  const y = date.getUTCFullYear();
+  const m = date.getUTCMonth() + 1;
+  const d = date.getUTCDate() + date.getUTCHours() / 24
+            + date.getUTCMinutes() / 1440 + date.getUTCSeconds() / 86400;
+  let yr = y, mo = m;
+  if (mo <= 2) { yr -= 1; mo += 12; }
+  const A = Math.floor(yr / 100);
+  const B = 2 - A + Math.floor(A / 4);
+  return Math.floor(365.25 * (yr + 4716)) + Math.floor(30.6001 * (mo + 1)) + d + B - 1524.5;
+}
+
+/** Julian centuries since J2000.0 */
+function toJ2000(jd) { return (jd - 2451545.0) / 36525.0; }
+
+/** Normalise angle to 0..360 */
+function norm360(a) { a = a % 360; return a < 0 ? a + 360 : a; }
+
+/** Normalise angle to 0..2PI */
+function norm2PI(a) { a = a % (2 * Math.PI); return a < 0 ? a + 2 * Math.PI : a; }
+
+/** Greenwich Mean Sidereal Time in degrees from JD */
+function gmst(jd) {
+  const T = toJ2000(jd);
+  let st = 280.46061837 + 360.98564736629 * (jd - 2451545.0)
+           + 0.000387933 * T * T - T * T * T / 38710000.0;
+  return norm360(st);
+}
+
+/** Local Sidereal Time in degrees */
+function lst(jd, lonDeg) {
+  return norm360(gmst(jd) + lonDeg);
+}
+
+/** Convert RA(hours)/Dec(deg) to Alt/Az given LST(deg) and lat(deg). Returns {alt, az} in degrees. */
+function raDecToAltAz(raHours, decDeg, lstDeg, latDeg) {
+  const ha = (lstDeg - raHours * 15) * DEG;
+  const dec = decDeg * DEG;
+  const lat = latDeg * DEG;
+  const sinAlt = Math.sin(dec) * Math.sin(lat) + Math.cos(dec) * Math.cos(lat) * Math.cos(ha);
+  const alt = Math.asin(clamp(sinAlt, -1, 1));
+  const cosAz = (Math.sin(dec) - Math.sin(alt) * Math.sin(lat)) / (Math.cos(alt) * Math.cos(lat));
+  let az = Math.acos(clamp(cosAz, -1, 1));
+  if (Math.sin(ha) > 0) az = 2 * Math.PI - az;
+  return { alt: alt * RAD, az: az * RAD };
+}
+
+/**
+ * Project alt/az to screen x,y using stereographic projection.
+ * Centre of screen = zenith. Returns null if below horizon (alt < 0).
+ */
+function altAzToScreen(alt, az, w, h) {
+  if (alt < -5) return null; // slightly below horizon OK for continuity
+  const r = Math.cos(alt * DEG) / (1 + Math.sin(alt * DEG)); // stereographic radius (0 at zenith, 1 at horizon)
+  const scale = Math.min(w, h) * 0.48; // fit sky dome to screen
+  const x = w / 2 + r * Math.sin(az * DEG) * scale;
+  const y = h / 2 - r * Math.cos(az * DEG) * scale;
+  return { x, y };
+}
+
+
+/* ==================== STAR CATALOGUE ==================== */
+// 150 brightest stars: [name, RA(hours), Dec(deg), Vmag, B-V]
+// From Yale Bright Star Catalogue (abbreviated)
+
+const STAR_CATALOGUE = [
+  ['Sirius',6.752,-16.72,-1.46,0.00],
+  ['Canopus',6.399,-52.70,-0.74,0.15],
+  ['Arcturus',14.261,19.18,-0.05,1.23],
+  ['Vega',18.616,38.78,0.03,0.00],
+  ['Capella',5.278,46.00,0.08,0.80],
+  ['Rigel',5.242,-8.20,0.13,-0.03],
+  ['Procyon',7.655,5.22,0.34,0.42],
+  ['Betelgeuse',5.919,7.41,0.42,1.85],
+  ['Achernar',1.629,-57.24,0.46,-0.16],
+  ['Hadar',14.064,-60.37,0.61,-0.23],
+  ['Altair',19.846,8.87,0.77,0.22],
+  ['Acrux',12.443,-63.10,0.76,-0.24],
+  ['Aldebaran',4.599,16.51,0.85,1.54],
+  ['Antares',16.490,-26.43,0.96,1.83],
+  ['Spica',13.420,-11.16,0.97,-0.23],
+  ['Pollux',7.755,28.03,1.14,1.00],
+  ['Fomalhaut',22.961,-29.62,1.16,0.09],
+  ['Deneb',20.690,45.28,1.25,0.09],
+  ['Mimosa',12.795,-59.69,1.25,-0.23],
+  ['Regulus',10.140,11.97,1.35,-0.11],
+  ['Adhara',6.977,-28.97,1.50,-0.21],
+  ['Castor',7.577,31.89,1.58,0.03],
+  ['Gacrux',12.519,-57.11,1.63,1.59],
+  ['Shaula',17.560,-37.10,1.63,-0.22],
+  ['Bellatrix',5.419,6.35,1.64,-0.22],
+  ['Elnath',5.438,28.61,1.65,-0.13],
+  ['Miaplacidus',9.220,-69.72,1.68,0.07],
+  ['Alnilam',5.603,-1.20,1.69,-0.19],
+  ['Alnair',22.137,-46.96,1.74,-0.07],
+  ['Alnitak',5.679,-1.94,1.77,-0.19],
+  ['Alioth',12.900,55.96,1.77,-0.02],
+  ['Dubhe',11.062,61.75,1.79,1.07],
+  ['Mirfak',3.405,49.86,1.79,0.48],
+  ['Kaus Australis',18.403,-34.38,1.85,-0.03],
+  ['Wezen',7.140,-26.39,1.84,0.68],
+  ['Alkaid',13.792,49.31,1.86,-0.10],
+  ['Sargas',17.622,-43.00,1.87,0.40],
+  ['Avior',8.375,-59.51,1.86,1.28],
+  ['Menkalinan',5.992,44.95,1.90,0.08],
+  ['Atria',16.811,-69.03,1.92,1.44],
+  ['Alhena',6.629,16.40,1.93,0.00],
+  ['Peacock',20.428,-56.74,1.94,-0.20],
+  ['Mirzam',6.378,-17.96,1.98,-0.24],
+  ['Alphard',9.460,-8.66,1.98,1.44],
+  ['Polaris',2.530,89.26,1.98,0.60],
+  ['Hamal',2.120,23.46,2.00,1.15],
+  ['Algieba',10.333,19.84,2.08,1.14],
+  ['Diphda',0.726,-17.99,2.02,1.02],
+  ['Nunki',18.921,-26.30,2.02,-0.13],
+  ['Mizar',13.399,54.93,2.04,0.02],
+  ['Saiph',5.796,-9.67,2.09,-0.18],
+  ['Kochab',14.845,74.16,2.08,1.47],
+  ['Rasalhague',17.582,12.56,2.08,0.15],
+  ['Algol',3.136,40.96,2.12,-0.05],
+  ['Almach',2.065,42.33,2.17,1.37],
+  ['Denebola',11.818,14.57,2.14,0.09],
+  ['Tiaki',1.907,-51.97,2.15,1.02],
+  ['Naos',8.060,-40.00,2.25,-0.27],
+  ['Muhlifain',12.692,-48.96,2.17,0.01],
+  ['Aspidiske',9.285,-59.28,2.25,0.18],
+  ['Suhail',9.133,-43.43,2.21,1.67],
+  ['Alphecca',15.578,26.71,2.23,0.03],
+  ['Mintaka',5.533,-0.30,2.23,-0.21],
+  ['Sadr',20.370,40.26,2.20,0.68],
+  ['Eltanin',17.943,51.49,2.23,1.52],
+  ['Schedar',0.675,56.54,2.23,1.17],
+  ['Dschubba',16.005,-22.62,2.32,-0.12],
+  ['Larawag',17.209,-43.24,2.29,1.61],
+  ['Menkent',14.112,-36.37,2.06,1.01],
+  ['Merak',11.031,56.38,2.37,0.03],
+  ['Sabik',17.173,-15.72,2.43,0.06],
+  ['Phecda',11.897,53.69,2.44,0.04],
+  ['Enif',21.736,9.88,2.39,1.53],
+  ['Scheat',23.063,28.08,2.42,1.67],
+  ['Eta Centauri',14.592,-42.16,2.31,-0.19],
+  ['Ankaa',0.438,-42.31,2.37,1.09],
+  ['Girtab',17.793,-37.04,2.41,-0.20],
+  ['Markab',23.079,15.21,2.49,-0.04],
+  ['Alderamin',21.310,62.59,2.51,0.22],
+  ['Acamar',2.971,-40.30,2.88,0.13],
+  ['Zubeneschamali',15.283,-9.38,2.61,-0.11],
+  ['Unukalhai',15.738,6.43,2.65,1.24],
+  ['Dsiban',17.508,86.59,2.74,0.02],
+  ['Rasalgethi',17.244,14.39,2.81,1.45],
+  ['Albireo',19.512,27.96,3.08,1.09],
+  ['Deneb Algedi',21.784,-16.13,2.87,0.09],
+  ['Thuban',14.073,64.38,3.65,0.00],
+  ['Cor Caroli',12.934,38.32,2.89,0.12],
+  ['Ascella',19.043,-29.88,2.60,0.08],
+  ['Phact',5.661,-34.07,2.64,-0.12],
+  ['Wazn',5.471,-35.77,3.10,1.02],
+  ['Nihal',5.471,-20.76,2.84,0.82],
+  ['Arneb',5.545,-17.82,2.58,0.21],
+  ['Cursa',5.131,-5.09,2.79,0.13],
+  ['Yed Prior',16.305,-3.69,2.74,1.17],
+  ['Tarazed',19.771,10.61,2.72,1.52],
+  ['Rukbat',19.398,-40.62,3.97,-0.05],
+  ['Caph',0.153,59.15,2.27,0.34],
+  ['Ruchbah',1.431,60.24,2.68,0.13],
+  ['Navi',0.945,60.72,2.47,-0.15],
+  // --- Additional stars for sky coverage ---
+  ['Deneb Kaitos',0.726,-17.99,2.04,1.02],
+  ['Mirach',1.163,35.62,2.05,1.58],
+  ['Alpheratz',0.140,29.09,2.06,-0.04],
+  ['Sheratan',1.911,20.81,2.64,0.17],
+  ['Menkar',3.038,4.09,2.53,1.63],
+  ['Alcyone',3.791,24.11,2.87,-0.08],
+  ['Electra',3.748,24.11,3.70,-0.11],
+  ['Maia',3.771,24.37,3.87,-0.07],
+  ['Merope',3.772,23.95,4.18,-0.06],
+  ['Taygeta',3.753,24.47,4.30,-0.11],
+  ['Propus',6.248,22.51,3.36,1.59],
+  ['Tejat',6.383,22.51,2.88,1.64],
+  ['Mebsuta',6.732,25.13,3.06,1.40],
+  ['Wasat',7.335,21.98,3.53,0.34],
+  ['Asellus Borealis',8.745,21.47,4.66,0.14],
+  ['Asellus Australis',8.778,18.15,3.94,1.00],
+  ['Algieba2',10.333,19.84,2.28,1.14],
+  ['Zosma',11.235,20.52,2.56,0.13],
+  ['Chertan',11.237,15.43,3.33,0.09],
+  ['Porrima',12.694,-1.45,2.74,0.37],
+  ['Vindemiatrix',13.036,10.96,2.83,0.93],
+  ['Zubenelgenubi',14.848,-16.04,2.75,0.14],
+  ['Graffias',16.091,-19.81,2.62,-0.07],
+  ['Lesath',17.530,-37.29,2.69,-0.20],
+  ['Kaus Media',18.350,-29.83,2.70,0.76],
+  ['Kaus Borealis',18.229,-25.42,2.82,1.02],
+  ['Sheliak',18.835,33.36,3.52,-0.56],
+  ['Sulafat',18.982,32.69,3.24,0.00],
+  ['Gienah',12.263,-17.54,2.59,-0.11],
+  ['Algorab',12.497,-16.52,2.95,0.01],
+  ['Sadalmelik',22.096,-0.32,2.96,0.97],
+  ['Sadalsuud',21.526,-5.57,2.91,0.83],
+  ['Markab2',23.079,15.21,2.49,-0.04],
+  ['Algenib',0.221,15.18,2.83,-0.11],
+  ['Schedir',0.675,56.54,2.24,1.17],
+  ['Mirphak',3.405,49.86,1.80,0.48],
+  ['Pherkad',15.346,71.83,3.00,0.05],
+  ['Errai',23.656,77.63,3.21,1.03],
+  ['Muscida',8.504,60.72,3.36,0.95],
+  ['Talitha',8.987,48.04,3.14,0.31],
+  ['Megrez',12.257,57.03,3.31,0.08],
+  ['Alcor',13.420,54.99,3.99,0.16],
+  ['Alula Borealis',11.308,33.09,3.49,1.40],
+  ['Nekkar',15.025,40.39,3.58,0.93],
+  ['Seginus',14.535,38.31,3.03,0.19],
+  ['Izar',14.750,27.07,2.37,0.97],
+  ['Muphrid',13.912,18.40,2.68,0.58],
+  ['Kornephoros',16.504,21.49,2.77,0.94],
+  ['Marfik',16.115,1.98,3.82,0.07],
+  ['RasAlhague',17.582,12.56,2.08,0.15],
+  ['Cebalrai',17.724,4.57,2.77,0.97],
+];
+
+
+/* ==================== CONSTELLATION DATA ==================== */
+// Each constellation: { name, stars: [{name, ra, dec}], lines: [[i,j],...] }
+// RA in hours, Dec in degrees — real coordinates
+
+const CONSTELLATIONS = {
+  orion: {
+    name: 'Orion',
+    stars: [
+      {n:'Betelgeuse',ra:5.919,dec:7.41},
+      {n:'Bellatrix',ra:5.419,dec:6.35},
+      {n:'Alnitak',ra:5.679,dec:-1.94},
+      {n:'Alnilam',ra:5.603,dec:-1.20},
+      {n:'Mintaka',ra:5.533,dec:-0.30},
+      {n:'Saiph',ra:5.796,dec:-9.67},
+      {n:'Rigel',ra:5.242,dec:-8.20},
+    ],
+    lines: [[0,1],[0,3],[1,4],[2,3],[3,4],[2,5],[4,6],[0,2],[1,4]]
+  },
+  taurus: {
+    name: 'Taurus',
+    stars: [
+      {n:'Aldebaran',ra:4.599,dec:16.51},
+      {n:'Elnath',ra:5.438,dec:28.61},
+      {n:'Alcyone',ra:3.791,dec:24.11},
+      {n:'ζ Tau',ra:5.627,dec:21.14},
+      {n:'θ² Tau',ra:4.476,dec:15.87},
+      {n:'γ Tau',ra:4.330,dec:15.63},
+      {n:'δ Tau',ra:4.382,dec:17.54},
+      {n:'ε Tau',ra:4.477,dec:19.18},
+    ],
+    lines: [[0,4],[4,5],[5,6],[6,7],[7,1],[0,3]]
+  },
+  gemini: {
+    name: 'Gemini',
+    stars: [
+      {n:'Castor',ra:7.577,dec:31.89},
+      {n:'Pollux',ra:7.755,dec:28.03},
+      {n:'Alhena',ra:6.629,dec:16.40},
+      {n:'Tejat',ra:6.383,dec:22.51},
+      {n:'Mebsuta',ra:6.732,dec:25.13},
+      {n:'Wasat',ra:7.335,dec:21.98},
+      {n:'Propus',ra:6.248,dec:22.51},
+    ],
+    lines: [[0,4],[4,3],[3,6],[1,5],[5,2],[0,1]]
+  },
+  leo: {
+    name: 'Leo',
+    stars: [
+      {n:'Regulus',ra:10.140,dec:11.97},
+      {n:'Denebola',ra:11.818,dec:14.57},
+      {n:'Algieba',ra:10.333,dec:19.84},
+      {n:'Zosma',ra:11.235,dec:20.52},
+      {n:'Chertan',ra:11.237,dec:15.43},
+      {n:'Adhafera',ra:10.278,dec:23.42},
+      {n:'Rasalas',ra:10.113,dec:26.01},
+      {n:'η Leo',ra:10.122,dec:16.76},
+    ],
+    lines: [[0,7],[7,2],[2,5],[5,6],[2,3],[3,1],[0,4],[4,1]]
+  },
+  cancer: {
+    name: 'Cancer',
+    stars: [
+      {n:'Acubens',ra:8.975,dec:11.86},
+      {n:'Al Tarf',ra:8.275,dec:9.19},
+      {n:'Asellus Borealis',ra:8.745,dec:21.47},
+      {n:'Asellus Australis',ra:8.778,dec:18.15},
+      {n:'ι Cnc',ra:8.781,dec:28.76},
+    ],
+    lines: [[1,0],[0,3],[3,2],[2,4],[3,0]]
+  },
+  virgo: {
+    name: 'Virgo',
+    stars: [
+      {n:'Spica',ra:13.420,dec:-11.16},
+      {n:'Porrima',ra:12.694,dec:-1.45},
+      {n:'Vindemiatrix',ra:13.036,dec:10.96},
+      {n:'Zavijava',ra:11.845,dec:1.76},
+      {n:'Auva',ra:12.927,dec:3.40},
+      {n:'Heze',ra:13.578,dec:-0.60},
+    ],
+    lines: [[0,1],[1,3],[1,4],[4,2],[0,5],[5,4]]
+  },
+  bootes: {
+    name: 'Boötes',
+    stars: [
+      {n:'Arcturus',ra:14.261,dec:19.18},
+      {n:'Izar',ra:14.750,dec:27.07},
+      {n:'Muphrid',ra:13.912,dec:18.40},
+      {n:'Seginus',ra:14.535,dec:38.31},
+      {n:'Nekkar',ra:15.025,dec:40.39},
+      {n:'η Boo',ra:13.825,dec:18.40},
+      {n:'ρ Boo',ra:14.530,dec:30.37},
+    ],
+    lines: [[0,2],[0,1],[1,6],[6,3],[3,4],[1,3]]
+  },
+  scorpius: {
+    name: 'Scorpius',
+    stars: [
+      {n:'Antares',ra:16.490,dec:-26.43},
+      {n:'Shaula',ra:17.560,dec:-37.10},
+      {n:'Sargas',ra:17.622,dec:-43.00},
+      {n:'Dschubba',ra:16.005,dec:-22.62},
+      {n:'Graffias',ra:16.091,dec:-19.81},
+      {n:'Lesath',ra:17.530,dec:-37.29},
+      {n:'Larawag',ra:17.209,dec:-43.24},
+      {n:'Girtab',ra:17.793,dec:-37.04},
+      {n:'Wei',ra:16.836,dec:-34.29},
+    ],
+    lines: [[4,3],[3,0],[0,8],[8,6],[6,2],[2,7],[1,5],[5,7],[8,1]]
+  },
+  sagittarius: {
+    name: 'Sagittarius',
+    stars: [
+      {n:'Kaus Australis',ra:18.403,dec:-34.38},
+      {n:'Nunki',ra:18.921,dec:-26.30},
+      {n:'Ascella',ra:19.043,dec:-29.88},
+      {n:'Kaus Media',ra:18.350,dec:-29.83},
+      {n:'Kaus Borealis',ra:18.229,dec:-25.42},
+      {n:'Nash',ra:18.097,dec:-30.42},
+      {n:'Rukbat',ra:19.398,dec:-40.62},
+    ],
+    lines: [[5,3],[3,0],[0,2],[2,1],[1,4],[4,3],[0,3]]
+  },
+  lyra: {
+    name: 'Lyra',
+    stars: [
+      {n:'Vega',ra:18.616,dec:38.78},
+      {n:'Sheliak',ra:18.835,dec:33.36},
+      {n:'Sulafat',ra:18.982,dec:32.69},
+      {n:'δ² Lyr',ra:18.908,dec:36.90},
+      {n:'ζ Lyr',ra:18.746,dec:37.61},
+    ],
+    lines: [[0,1],[0,4],[1,2],[2,3],[3,4]]
+  },
+  pegasus: {
+    name: 'Pegasus',
+    stars: [
+      {n:'Markab',ra:23.079,dec:15.21},
+      {n:'Scheat',ra:23.063,dec:28.08},
+      {n:'Algenib',ra:0.221,dec:15.18},
+      {n:'Alpheratz',ra:0.140,dec:29.09},
+      {n:'Enif',ra:21.736,dec:9.88},
+    ],
+    lines: [[0,1],[1,3],[3,2],[2,0],[0,4]]
+  },
+  aquila: {
+    name: 'Aquila',
+    stars: [
+      {n:'Altair',ra:19.846,dec:8.87},
+      {n:'Tarazed',ra:19.771,dec:10.61},
+      {n:'Alshain',ra:19.922,dec:6.41},
+      {n:'δ Aql',ra:19.425,dec:3.11},
+      {n:'ζ Aql',ra:19.090,dec:13.86},
+    ],
+    lines: [[4,1],[1,0],[0,2],[2,3]]
+  },
+  cygnus: {
+    name: 'Cygnus',
+    stars: [
+      {n:'Deneb',ra:20.690,dec:45.28},
+      {n:'Sadr',ra:20.370,dec:40.26},
+      {n:'Gienah Cyg',ra:20.770,dec:33.97},
+      {n:'Albireo',ra:19.512,dec:27.96},
+      {n:'δ Cyg',ra:19.750,dec:45.13},
+      {n:'ε Cyg',ra:20.770,dec:33.97},
+    ],
+    lines: [[0,1],[1,3],[1,4],[1,2]]
+  },
+  andromeda: {
+    name: 'Andromeda',
+    stars: [
+      {n:'Alpheratz',ra:0.140,dec:29.09},
+      {n:'Mirach',ra:1.163,dec:35.62},
+      {n:'Almach',ra:2.065,dec:42.33},
+      {n:'δ And',ra:0.656,dec:30.86},
+    ],
+    lines: [[0,3],[3,1],[1,2]]
+  },
+  perseus: {
+    name: 'Perseus',
+    stars: [
+      {n:'Mirfak',ra:3.405,dec:49.86},
+      {n:'Algol',ra:3.136,dec:40.96},
+      {n:'ζ Per',ra:3.902,dec:31.88},
+      {n:'ε Per',ra:3.964,dec:40.01},
+      {n:'δ Per',ra:3.715,dec:47.79},
+      {n:'γ Per',ra:3.080,dec:53.51},
+    ],
+    lines: [[5,0],[0,4],[0,3],[3,2],[0,1]]
+  },
+  aries: {
+    name: 'Aries',
+    stars: [
+      {n:'Hamal',ra:2.120,dec:23.46},
+      {n:'Sheratan',ra:1.911,dec:20.81},
+      {n:'Mesarthim',ra:1.890,dec:19.29},
+    ],
+    lines: [[0,1],[1,2]]
+  },
+};
+
+// Constellation visibility by month and hemisphere
+const CONSTELLATION_SCHEDULE = {
+  north: [
+    ['orion','taurus','gemini'],      // Jan
+    ['orion','taurus','gemini'],      // Feb
+    ['leo','cancer','gemini'],        // Mar
+    ['leo','cancer','virgo'],         // Apr
+    ['virgo','leo','bootes'],         // May
+    ['virgo','bootes','scorpius'],    // Jun
+    ['scorpius','sagittarius','lyra'],// Jul
+    ['sagittarius','lyra','aquila'],  // Aug
+    ['pegasus','aquila','cygnus'],    // Sep
+    ['pegasus','cygnus','andromeda'], // Oct
+    ['andromeda','perseus','aries'],  // Nov
+    ['orion','perseus','taurus'],     // Dec
+  ],
+  south: [
+    ['orion','taurus','gemini'],
+    ['orion','gemini','cancer'],
+    ['leo','cancer','virgo'],
+    ['leo','virgo','bootes'],
+    ['scorpius','virgo','bootes'],
+    ['scorpius','sagittarius','lyra'],
+    ['sagittarius','scorpius','aquila'],
+    ['sagittarius','aquila','lyra'],
+    ['pegasus','aquila','cygnus'],
+    ['pegasus','andromeda','cygnus'],
+    ['andromeda','perseus','aries'],
+    ['orion','taurus','perseus'],
+  ]
+};
+
+
+/* ==================== MOON PHASE CALCULATION (Meeus) ==================== */
+
+/**
+ * Calculate moon phase data for a given date.
+ * Based on Jean Meeus "Astronomical Algorithms" — simplified lunation algorithm.
+ */
+function calcMoonPhase(date) {
+  const jd = toJD(date);
+  const T = toJ2000(jd);
+
+  // Synodic month = 29.53058868 days
+  const SYNODIC = 29.53058868;
+
+  // Mean phase calculation (Meeus Ch.49 simplified)
+  // Days since known new moon: Jan 6, 2000 18:14 UTC (JD 2451550.1)
+  const daysSinceNew = jd - 2451550.1;
+  const lunations = daysSinceNew / SYNODIC;
+  const age = (lunations - Math.floor(lunations)) * SYNODIC;
+
+  // Moon's mean anomaly (simplified Meeus)
+  const sunMeanAnomaly = norm360(357.5291 + 35999.0503 * T) * DEG;
+  const moonMeanAnomaly = norm360(134.9634 + 477198.8676 * T) * DEG;
+  const moonElongation = norm360(297.8502 + 445267.1115 * T) * DEG;
+
+  // Phase angle (illumination) — more accurate via elongation
+  const i = Math.acos(Math.cos(moonElongation) * Math.cos(0.00)) ; // simplified
+  const illumination = (1 - Math.cos(moonElongation)) / 2 * 100;
+
+  // Phase name from age
+  let phaseName;
+  if (age < 1.85)       phaseName = 'New Moon';
+  else if (age < 7.38)  phaseName = 'Waxing Crescent';
+  else if (age < 9.23)  phaseName = 'First Quarter';
+  else if (age < 14.77) phaseName = 'Waxing Gibbous';
+  else if (age < 16.61) phaseName = 'Full Moon';
+  else if (age < 22.15) phaseName = 'Waning Gibbous';
+  else if (age < 23.99) phaseName = 'Last Quarter';
+  else if (age < 27.68) phaseName = 'Waning Crescent';
+  else                   phaseName = 'New Moon';
+
+  // Phase value 0..1 (0 = new, 0.5 = full)
+  const phase = age / SYNODIC;
+
+  // Days until next full moon (age ~14.77)
+  let daysToFull = 14.77 - age;
+  if (daysToFull < 0) daysToFull += SYNODIC;
+
+  // Days until next new moon
+  let daysToNew = SYNODIC - age;
+  if (daysToNew < 0.5) daysToNew = 0; // basically now
+
+  return {
+    phase: Math.round(phase * 1000) / 1000,
+    phaseName,
+    illumination: Math.round(illumination * 10) / 10,
+    ageDays: Math.round(age * 10) / 10,
+    daysToFull: Math.round(daysToFull * 10) / 10,
+    daysToNew: Math.round(daysToNew * 10) / 10,
+  };
+}
+
+
+/* ==================== SOLAR CALCULATIONS (NOAA) ==================== */
+
+/**
+ * NOAA solar position algorithm.
+ * Returns sunrise, sunset, solar noon (as Date objects), day length.
+ */
+function calcSolar(date, lat, lon) {
+  // Work with local midnight
+  const year = date.getFullYear();
+  const month = date.getMonth();
+  const day = date.getDate();
+  const localMidnight = new Date(year, month, day, 0, 0, 0);
+  const jd = toJD(new Date(Date.UTC(year, month, day, 12, 0, 0)));
+  const T = toJ2000(jd);
+
+  // Solar mean anomaly (degrees)
+  const M = norm360(357.52911 + 35999.05029 * T - 0.0001537 * T * T);
+  // Equation of center
+  const C = (1.9146 - 0.004817 * T - 0.000014 * T * T) * Math.sin(M * DEG)
+          + (0.019993 - 0.000101 * T) * Math.sin(2 * M * DEG)
+          + 0.00029 * Math.sin(3 * M * DEG);
+  // Sun's geometric mean longitude
+  const L0 = norm360(280.46646 + 36000.76983 * T + 0.0003032 * T * T);
+  const sunLon = norm360(L0 + C);
+  // Apparent longitude
+  const omega = 125.04 - 1934.136 * T;
+  const lambda = sunLon - 0.00569 - 0.00478 * Math.sin(omega * DEG);
+  // Obliquity of ecliptic
+  const eps0 = 23.4393 - 0.01300 * T;
+  const eps = eps0 + 0.00256 * Math.cos(omega * DEG);
+  // Sun declination
+  const sinDec = Math.sin(eps * DEG) * Math.sin(lambda * DEG);
+  const decl = Math.asin(sinDec) * RAD;
+  // Equation of Time (minutes)
+  const y = Math.tan(eps * DEG / 2) ** 2;
+  const eqTime = 4 * RAD * (
+    y * Math.sin(2 * L0 * DEG)
+    - 2 * 0.01671 * Math.sin(M * DEG)
+    + 4 * 0.01671 * y * Math.sin(M * DEG) * Math.cos(2 * L0 * DEG)
+    - 0.5 * y * y * Math.sin(4 * L0 * DEG)
+    - 1.25 * 0.01671 * 0.01671 * Math.sin(2 * M * DEG)
+  );
+
+  // Hour angle for sunrise/sunset (degrees)
+  const zenith = 90.833; // official zenith for sunrise/sunset
+  const cosHA = (Math.cos(zenith * DEG) / (Math.cos(lat * DEG) * Math.cos(decl * DEG)))
+              - Math.tan(lat * DEG) * Math.tan(decl * DEG);
+
+  // Check for polar day/night
+  if (cosHA > 1) {
+    // Sun never rises (polar night)
+    return { sunrise: null, sunset: null, solarNoon: null, dayLength: 0, dayLengthDelta: 0 };
+  }
+  if (cosHA < -1) {
+    // Sun never sets (midnight sun)
+    return { sunrise: null, sunset: null, solarNoon: null, dayLength: 24 * 60, dayLengthDelta: 0 };
+  }
+
+  const HA = Math.acos(clamp(cosHA, -1, 1)) * RAD;
+
+  // Solar noon (minutes from midnight UTC)
+  const noonUTC = 720 - 4 * lon - eqTime; // in minutes
+  const sunriseUTC = noonUTC - HA * 4;
+  const sunsetUTC = noonUTC + HA * 4;
+
+  // Get timezone offset in minutes
+  const tzOffset = -date.getTimezoneOffset();
+
+  // Convert to local Date objects
+  function minutesToDate(mins) {
+    const localMins = mins + tzOffset;
+    const d = new Date(year, month, day);
+    d.setMinutes(localMins);
+    return d;
+  }
+
+  const sunrise = minutesToDate(sunriseUTC);
+  const sunset = minutesToDate(sunsetUTC);
+  const solarNoon = minutesToDate(noonUTC);
+  const dayLengthMin = 2 * HA * 4; // in minutes
+
+  // Calculate yesterday's day length for delta
+  const yesterday = new Date(year, month, day - 1);
+  const jdY = toJD(new Date(Date.UTC(year, month, day - 1, 12, 0, 0)));
+  const TY = toJ2000(jdY);
+  const MY = norm360(357.52911 + 35999.05029 * TY - 0.0001537 * TY * TY);
+  const CY = (1.9146 - 0.004817 * TY) * Math.sin(MY * DEG)
+           + 0.019993 * Math.sin(2 * MY * DEG);
+  const L0Y = norm360(280.46646 + 36000.76983 * TY);
+  const sunLonY = norm360(L0Y + CY);
+  const omegaY = 125.04 - 1934.136 * TY;
+  const lambdaY = sunLonY - 0.00569 - 0.00478 * Math.sin(omegaY * DEG);
+  const epsY = 23.4393 - 0.01300 * TY + 0.00256 * Math.cos(omegaY * DEG);
+  const declY = Math.asin(Math.sin(epsY * DEG) * Math.sin(lambdaY * DEG)) * RAD;
+  const cosHAY = (Math.cos(90.833 * DEG) / (Math.cos(lat * DEG) * Math.cos(declY * DEG)))
+               - Math.tan(lat * DEG) * Math.tan(declY * DEG);
+  let dayLengthYesterday = 0;
+  if (cosHAY >= -1 && cosHAY <= 1) {
+    dayLengthYesterday = 2 * Math.acos(clamp(cosHAY, -1, 1)) * RAD * 4;
+  }
+  const dayLengthDelta = Math.round(dayLengthMin - dayLengthYesterday);
+
+  const hours = Math.floor(dayLengthMin / 60);
+  const mins = Math.round(dayLengthMin % 60);
+
+  return {
+    sunrise,
+    sunset,
+    solarNoon,
+    dayLength: `${hours}h ${mins}m`,
+    dayLengthMinutes: Math.round(dayLengthMin),
+    dayLengthDelta, // minutes, positive = getting longer
+  };
+}
+
+/** Is it currently daytime? Use real sunrise/sunset if available. */
+function isDaytime() {
+  if (window.VIGIL && window.VIGIL.sun && window.VIGIL.sun.sunrise && window.VIGIL.sun.sunset) {
+    const now = new Date();
+    return now >= window.VIGIL.sun.sunrise && now <= window.VIGIL.sun.sunset;
+  }
+  const hour = new Date().getHours();
+  return hour >= 6 && hour < 20;
+}
+
+
+/* ==================== SABBAT CALENDAR ==================== */
+
+/**
+ * Calculate the 8 sabbats for a given year.
+ * Solstice/equinox dates computed from Jean Meeus algorithm.
+ */
+function calcSabbats(year) {
+  // Approximate solstice/equinox using Meeus table 27.a (for years 2000-2100)
+  // Returns JDE (Julian Ephemeris Day) then converts to Date
+  function equinoxSolstice(y, event) {
+    const Y = (y - 2000) / 1000;
+    let jde;
+    switch (event) {
+      case 'spring':
+        jde = 2451623.80984 + 365242.37404 * Y + 0.05169 * Y*Y
+            - 0.00411 * Y*Y*Y - 0.00057 * Y*Y*Y*Y;
+        break;
+      case 'summer':
+        jde = 2451716.56767 + 365241.62603 * Y + 0.00325 * Y*Y
+            + 0.00888 * Y*Y*Y - 0.00030 * Y*Y*Y*Y;
+        break;
+      case 'autumn':
+        jde = 2451810.21715 + 365242.01767 * Y - 0.11575 * Y*Y
+            + 0.00337 * Y*Y*Y + 0.00078 * Y*Y*Y*Y;
+        break;
+      case 'winter':
+        jde = 2451900.05952 + 365242.74049 * Y - 0.06223 * Y*Y
+            - 0.00823 * Y*Y*Y + 0.00032 * Y*Y*Y*Y;
+        break;
+    }
+    // Convert JDE to Date (approximate — ignoring delta-T correction)
+    const msPerDay = 86400000;
+    const epoch = new Date(Date.UTC(2000, 0, 1, 12, 0, 0)); // J2000 = JD 2451545.0
+    const msSinceEpoch = (jde - 2451545.0) * msPerDay;
+    return new Date(epoch.getTime() + msSinceEpoch);
+  }
+
+  const springEq = equinoxSolstice(year, 'spring');
+  const summerSol = equinoxSolstice(year, 'summer');
+  const autumnEq = equinoxSolstice(year, 'autumn');
+  const winterSol = equinoxSolstice(year, 'winter');
+
+  // Also need previous year's winter solstice for Wheel of Year
+  const prevWinterSol = equinoxSolstice(year - 1, 'winter');
+
+  const sabbats = [
+    { name: 'Yule',        date: winterSol },
+    { name: 'Imbolc',      date: new Date(year, 1, 1) },  // Feb 1
+    { name: 'Ostara',      date: springEq },
+    { name: 'Beltane',     date: new Date(year, 4, 1) },  // May 1
+    { name: 'Litha',       date: summerSol },
+    { name: 'Lughnasadh',  date: new Date(year, 7, 1) },  // Aug 1
+    { name: 'Mabon',       date: autumnEq },
+    { name: 'Samhain',     date: new Date(year, 9, 31) }, // Oct 31
+  ];
+
+  // Sort by date
+  sabbats.sort((a, b) => a.date - b.date);
+
+  const now = new Date();
+  const todayMs = now.getTime();
+  const oneDay = 86400000;
+
+  // Find next sabbat
+  let nextSabbat = null;
+  let daysUntilNext = Infinity;
+  let nearSabbat = null;
+
+  for (const s of sabbats) {
+    const diff = Math.ceil((s.date.getTime() - todayMs) / oneDay);
+    if (diff >= 0 && diff < daysUntilNext) {
+      daysUntilNext = diff;
+      nextSabbat = s;
+    }
+    // Check if within 3 days
+    if (Math.abs(diff) <= 3) {
+      nearSabbat = s.name;
+    }
+  }
+
+  // If no future sabbat this year, next is Imbolc next year
+  if (!nextSabbat) {
+    nextSabbat = { name: 'Imbolc', date: new Date(year + 1, 1, 1) };
+    daysUntilNext = Math.ceil((nextSabbat.date.getTime() - todayMs) / oneDay);
+  }
+
+  // Wheel of Year position (0/1 = Yule, 0.125 = Imbolc, etc.)
+  // Based on position between previous Yule and next Yule
+  const yuleThis = winterSol;
+  const yulePrev = prevWinterSol;
+  let wheelPosition;
+  if (todayMs >= yuleThis.getTime()) {
+    // Past this year's Yule — between Yule(this) and Yule(next)
+    const yuleNext = equinoxSolstice(year + 1, 'winter');
+    wheelPosition = (todayMs - yuleThis.getTime()) / (yuleNext.getTime() - yuleThis.getTime());
+  } else {
+    // Between prev Yule and this Yule
+    wheelPosition = (todayMs - yulePrev.getTime()) / (yuleThis.getTime() - yulePrev.getTime());
+  }
+
+  // Current sabbat "season" (the most recent sabbat)
+  let currentSabbat = sabbats[sabbats.length - 1].name; // default to last
+  for (let i = sabbats.length - 1; i >= 0; i--) {
+    if (todayMs >= sabbats[i].date.getTime()) {
+      currentSabbat = sabbats[i].name;
+      break;
+    }
+  }
+
+  return {
+    current: currentSabbat,
+    next: nextSabbat.date,
+    nextName: nextSabbat.name,
+    daysUntilNext,
+    nearSabbat,
+    wheelOfYear: Math.round(wheelPosition * 1000) / 1000,
+    all: sabbats,
+  };
+}
+
+
+/* ==================== WEATHER (Open-Meteo) ==================== */
+
+/**
+ * Fetch weather from Open-Meteo (free, no API key).
+ */
+async function fetchWeather(lat, lon) {
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weathercode,windspeed_10m,winddirection_10m,cloudcover&daily=sunrise,sunset&timezone=auto`;
+  try {
+    const res = await fetch(url);
+    const data = await res.json();
+    const c = data.current;
+
+    const windDir = degToCompass(c.winddirection_10m);
+    const description = weatherCodeToDescription(c.weathercode);
+    const cloud = c.cloudcover;
+
+    let stargazeQuality;
+    if (cloud < 20) stargazeQuality = 'excellent';
+    else if (cloud < 40) stargazeQuality = 'good';
+    else if (cloud < 70) stargazeQuality = 'fair';
+    else stargazeQuality = 'poor';
+
+    return {
+      cloudCover: cloud,
+      windSpeed: c.windspeed_10m,
+      windDirection: windDir,
+      weatherCode: c.weathercode,
+      description,
+      temperature: c.temperature_2m,
+      stargazeQuality,
+    };
+  } catch (e) {
+    console.warn('Weather fetch failed:', e);
+    return {
+      cloudCover: null,
+      windSpeed: null,
+      windDirection: null,
+      weatherCode: null,
+      description: 'unavailable',
+      temperature: null,
+      stargazeQuality: 'unknown',
+    };
+  }
+}
+
+function degToCompass(deg) {
+  const dirs = ['N','NE','E','SE','S','SW','W','NW'];
+  return dirs[Math.round(deg / 45) % 8];
+}
+
+function weatherCodeToDescription(code) {
+  if (code === 0) return 'clear';
+  if (code <= 3) return 'partly cloudy';
+  if (code <= 49) return 'foggy';
+  if (code <= 59) return 'rainy';
+  if (code <= 69) return 'rainy';
+  if (code <= 79) return 'snowy';
+  if (code <= 84) return 'rainy';
+  if (code <= 89) return 'snowy';
+  if (code <= 99) return 'stormy';
+  return 'overcast';
+}
+
+
+/* ==================== LOCATION ==================== */
+
+const DEFAULT_LOCATION = { lat: 51.5074, lon: -0.1278 };
+let userLocation = DEFAULT_LOCATION;
+
+function requestLocation() {
+  if (!navigator.geolocation) { skipLocation(); return; }
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      userLocation = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+      storeLocation(userLocation.lat, userLocation.lon);
+      dismissOverlay();
+    },
+    () => skipLocation(),
+    { timeout: 10000 }
+  );
+}
+
+function skipLocation() {
+  userLocation = DEFAULT_LOCATION;
+  storeLocation(userLocation.lat, userLocation.lon);
+  dismissOverlay();
+}
+
+function dismissOverlay() {
+  const overlay = document.getElementById('location-overlay');
+  overlay.classList.add('hidden');
+  setTimeout(() => overlay.remove(), 800);
+  initScene();
+}
+
+(function checkLocationOnLoad() {
+  const stored = getStoredLocation();
+  if (stored) {
+    userLocation = stored;
+    document.getElementById('location-overlay').remove();
+    initScene();
+  }
+})();
+
+
+/* ==================== TAB SYSTEM ==================== */
+
+let activeTab = 'sky';
+
+function switchTab(tabName) {
+  activeTab = tabName;
+  document.querySelectorAll('.tab-icon').forEach(el => {
+    el.classList.toggle('active', el.dataset.tab === tabName);
+  });
+}
+
+
+/* ==================== REAL STAR RENDERING (Canvas 2D) ==================== */
+
+let skyCanvas, skyCtx;
+let parallaxX = 0, parallaxY = 0;
+let targetParallaxX = 0, targetParallaxY = 0;
+let isMobile = false;
+let animationId;
+let starScreenPositions = []; // cached {x, y, mag, bv, name, brightness}
+let constellationStarNames = new Set(); // names of stars in active constellations
+
+/**
+ * Colour from B-V index.
+ */
+function bvToColor(bv) {
+  if (bv < -0.1) return { r: 202, g: 216, b: 255 }; // blue-white #cad8ff
+  if (bv < 0.2)  return { r: 255, g: 254, b: 240 }; // white #fffef0
+  if (bv < 0.8)  return { r: 255, g: 248, b: 230 }; // warm white
+  if (bv < 1.2)  return { r: 255, g: 244, b: 214 }; // pale yellow #fff4d6
+  return { r: 255, g: 217, b: 125 }; // warm gold #ffd97d
+}
+
+/**
+ * Star visual size from magnitude. Brighter = lower mag = bigger.
+ * Range: mag -1.5 → ~3px, mag 4 → ~0.5px
+ */
+function magToSize(mag) {
+  return Math.max(0.3, 2.8 - mag * 0.5);
+}
+
+/**
+ * Star opacity from magnitude.
+ */
+function magToOpacity(mag) {
+  if (mag < 0) return 1.0;
+  if (mag < 1) return 0.95;
+  if (mag < 2) return 0.85;
+  if (mag < 3) return 0.65;
+  if (mag < 4) return 0.45;
+  return 0.3;
+}
+
+/**
+ * Compute screen positions for all catalogue stars based on current time/location.
+ */
+function computeStarPositions() {
+  const now = new Date();
+  const jd = toJD(now);
+  const lstDeg = lst(jd, userLocation.lon);
+  const w = skyCanvas.width;
+  const h = skyCanvas.height;
+  const dpr = Math.min(window.devicePixelRatio, 2);
+
+  starScreenPositions = [];
+
+  for (const star of STAR_CATALOGUE) {
+    const [name, ra, dec, mag, bv] = star;
+    const { alt, az } = raDecToAltAz(ra, dec, lstDeg, userLocation.lat);
+    if (alt < -5) continue; // below horizon
+
+    const pos = altAzToScreen(alt, az, w / dpr, h / dpr);
+    if (!pos) continue;
+
+    // Check if off screen (with margin)
+    if (pos.x < -20 || pos.x > w / dpr + 20 || pos.y < -20 || pos.y > h / dpr + 20) continue;
+
+    const isConstellationStar = constellationStarNames.has(name);
+
+    starScreenPositions.push({
+      x: pos.x,
+      y: pos.y,
+      mag,
+      bv,
+      name,
+      color: bvToColor(bv),
+      size: magToSize(mag),
+      opacity: magToOpacity(mag),
+      isBright: mag < 1.5,
+      isConstellationStar,
+    });
+  }
+}
+
+/**
+ * Draw the starfield onto the 2D canvas.
+ */
+function drawStars(time) {
+  const dpr = Math.min(window.devicePixelRatio, 2);
+  const w = skyCanvas.width / dpr;
+  const h = skyCanvas.height / dpr;
+
+  skyCtx.save();
+  skyCtx.setTransform(1, 0, 0, 1, 0, 0);
+  skyCtx.clearRect(0, 0, skyCanvas.width, skyCanvas.height);
+  skyCtx.scale(dpr, dpr);
+
+  // Draw background gradient
+  const grad = skyCtx.createRadialGradient(w / 2, h * 0.4, 0, w / 2, h / 2, Math.max(w, h) * 0.8);
+  if (isDaytime()) {
+    grad.addColorStop(0, '#111d50');
+    grad.addColorStop(0.6, '#0e0820');
+    grad.addColorStop(1, '#0c0018');
+  } else {
+    grad.addColorStop(0, '#0d1b4b');
+    grad.addColorStop(0.6, '#0a0a2e');
+    grad.addColorStop(1, '#0a0015');
+  }
+  skyCtx.fillStyle = grad;
+  skyCtx.fillRect(0, 0, w, h);
+
+  // Subtle purple nebula bloom
+  const nebula = skyCtx.createRadialGradient(w * 0.6, h * 0.2, 0, w * 0.6, h * 0.2, w * 0.4);
+  nebula.addColorStop(0, 'rgba(60, 20, 80, 0.12)');
+  nebula.addColorStop(0.5, 'rgba(40, 10, 60, 0.06)');
+  nebula.addColorStop(1, 'rgba(0, 0, 0, 0)');
+  skyCtx.fillStyle = nebula;
+  skyCtx.fillRect(0, 0, w, h);
+
+  const nebula2 = skyCtx.createRadialGradient(w * 0.35, h * 0.28, 0, w * 0.35, h * 0.28, w * 0.25);
+  nebula2.addColorStop(0, 'rgba(30, 15, 70, 0.10)');
+  nebula2.addColorStop(1, 'rgba(0, 0, 0, 0)');
+  skyCtx.fillStyle = nebula2;
+  skyCtx.fillRect(0, 0, w, h);
+
+  // Parallax offsets per "layer" (based on magnitude as depth proxy)
+  // Desktop: max 8/4/2px. Mobile: keep existing feel.
+  const maxNear = isMobile ? 15 : 8;
+  const maxMid = isMobile ? 8 : 4;
+  const maxFar = isMobile ? 4 : 2;
+
+  for (const star of starScreenPositions) {
+    // Determine parallax layer from magnitude
+    let pxOffset;
+    if (star.mag < 1.5) pxOffset = maxNear;
+    else if (star.mag < 3.0) pxOffset = maxMid;
+    else pxOffset = maxFar;
+
+    const sx = star.x + parallaxX * pxOffset;
+    const sy = star.y - parallaxY * pxOffset;
+
+    // Subtle twinkle for bright stars
+    let opacity = star.opacity;
+    if (star.isBright) {
+      opacity *= 0.9 + 0.1 * Math.sin(time * (2.0 + star.mag) + star.x * 0.1);
+    }
+
+    // Constellation stars: slightly brighter
+    if (star.isConstellationStar) {
+      opacity = Math.min(1.0, opacity * 1.3);
+    }
+
+    const { r, g, b } = star.color;
+
+    // Only the brightest ~15 stars get a subtle glow
+    if (star.mag < 1.0) {
+      const glowSize = (2.0 - star.mag) * 3;
+      const glowGrad = skyCtx.createRadialGradient(sx, sy, 0, sx, sy, glowSize);
+      glowGrad.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${opacity * 0.15})`);
+      glowGrad.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
+      skyCtx.fillStyle = glowGrad;
+      skyCtx.beginPath();
+      skyCtx.arc(sx, sy, glowSize, 0, Math.PI * 2);
+      skyCtx.fill();
+    }
+
+    // Sharp pinpoint dot
+    skyCtx.fillStyle = `rgba(${r}, ${g}, ${b}, ${opacity})`;
+    skyCtx.beginPath();
+    skyCtx.arc(sx, sy, star.size, 0, Math.PI * 2);
+    skyCtx.fill();
+  }
+
+  skyCtx.restore();
+}
+
+
+/* ==================== CONSTELLATION RENDERER ==================== */
+
+let activeConstellationKeys = [];
+
+/**
+ * Determine which constellations to show based on month and hemisphere.
+ */
+function selectConstellations() {
+  const month = new Date().getMonth(); // 0-indexed
+  const hemi = userLocation.lat >= 0 ? 'north' : 'south';
+  const keys = CONSTELLATION_SCHEDULE[hemi][month];
+  activeConstellationKeys = keys.filter(k => CONSTELLATIONS[k]);
+
+  // Build set of constellation star names for brightness boost
+  constellationStarNames.clear();
+  for (const key of activeConstellationKeys) {
+    const c = CONSTELLATIONS[key];
+    for (const s of c.stars) {
+      constellationStarNames.add(s.n);
+    }
+  }
+
+  return activeConstellationKeys;
+}
+
+/**
+ * Draw constellation lines and stars in the SVG overlay.
+ * Uses real RA/Dec positions projected to screen.
+ */
+function drawConstellations() {
+  const svg = document.getElementById('constellation-layer');
+  const now = new Date();
+  const jd = toJD(now);
+  const lstDeg = lst(jd, userLocation.lon);
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+
+  let svgContent = '';
+
+  // Only draw the primary constellation (first in the list)
+  const primaryKey = activeConstellationKeys[0];
+  if (!primaryKey || !CONSTELLATIONS[primaryKey]) {
+    svg.innerHTML = '';
+    return primaryKey;
+  }
+
+  const constellation = CONSTELLATIONS[primaryKey];
+  const screenStars = [];
+
+  for (const s of constellation.stars) {
+    const { alt, az } = raDecToAltAz(s.ra, s.dec, lstDeg, userLocation.lat);
+    const pos = altAzToScreen(alt, az, w, h);
+    screenStars.push(pos); // may be null if below horizon
+  }
+
+  // Draw lines
+  for (const [a, b] of constellation.lines) {
+    const pa = screenStars[a];
+    const pb = screenStars[b];
+    if (!pa || !pb) continue;
+    svgContent += `<line class="constellation-line" x1="${pa.x}" y1="${pa.y}" x2="${pb.x}" y2="${pb.y}" />`;
+  }
+
+  // Draw constellation star markers
+  constellation.stars.forEach((s, i) => {
+    const pos = screenStars[i];
+    if (!pos) return;
+    svgContent += `<circle class="constellation-star" cx="${pos.x}" cy="${pos.y}" r="2" style="animation-delay: ${-i * 0.7}s" />`;
+  });
+
+  svg.innerHTML = svgContent;
+
+  return primaryKey;
+}
+
+
+/* ==================== CONSTELLATION PARALLAX ==================== */
+
+function updateConstellationParallax() {
+  const svg = document.getElementById('constellation-layer');
+  if (!svg) return;
+  const maxOffset = isMobile ? 8 : 4;
+  const offsetX = parallaxX * maxOffset;
+  const offsetY = -parallaxY * maxOffset;
+  svg.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
+}
+
+
+/* ==================== MOON RENDERER ==================== */
+
+/**
+ * Draw the moon with the correct phase.
+ * @param {number} illumination - 0..100
+ * @param {number} phase - 0..1 (0=new, 0.5=full)
+ * @param {string} phaseName
+ */
+function drawMoon(illumination, phase) {
+  const canvas = document.getElementById('moon-canvas');
+  const ctx = canvas.getContext('2d');
+
+  // Responsive size: 180px mobile, 200px desktop
+  const moonDiameter = window.innerWidth <= 600 ? 180 : 200;
+  const canvasSize = moonDiameter + 80; // extra space for glow
+  const r = moonDiameter / 2;
+  const cx = canvasSize / 2;
+  const cy = canvasSize / 2;
+
+  const dpr = Math.min(window.devicePixelRatio, 2);
+  canvas.width = canvasSize * dpr;
+  canvas.height = canvasSize * dpr;
+  canvas.style.width = canvasSize + 'px';
+  canvas.style.height = canvasSize + 'px';
+  ctx.scale(dpr, dpr);
+
+  ctx.clearRect(0, 0, canvasSize, canvasSize);
+
+  // --- Moon glow halo (scales with illumination) ---
+  const glowIntensity = illumination / 100;
+  const glowRadius = r + 20 + glowIntensity * 30;
+  const glowAlpha = 0.04 + glowIntensity * 0.1;
+
+  const glowGrad = ctx.createRadialGradient(cx, cy, r * 0.8, cx, cy, glowRadius);
+  glowGrad.addColorStop(0, `rgba(255, 254, 240, ${glowAlpha})`);
+  glowGrad.addColorStop(0.5, `rgba(255, 254, 240, ${glowAlpha * 0.4})`);
+  glowGrad.addColorStop(1, 'rgba(255, 254, 240, 0)');
+  ctx.fillStyle = glowGrad;
+  ctx.beginPath();
+  ctx.arc(cx, cy, glowRadius, 0, Math.PI * 2);
+  ctx.fill();
+
+  // --- Moon disc: lit portion in warm off-white ---
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fillStyle = '#f5f0e8';
+  ctx.fill();
+
+  // --- Maria (dark patches) — subtle texture ---
+  const maria = [
+    { x: -0.15, y: -0.2, r: 0.18 },  // Mare Imbrium
+    { x: 0.1,  y: -0.35, r: 0.12 },  // Mare Serenitatis
+    { x: 0.2,  y: -0.15, r: 0.14 },  // Mare Tranquillitatis
+    { x: 0.05, y: 0.05,  r: 0.10 },  // Mare Nubium
+    { x: -0.25, y: 0.1,  r: 0.08 },  // Oceanus Procellarum edge
+    { x: 0.15, y: 0.2,   r: 0.06 },  // small crater
+  ];
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.clip();
+
+  for (const m of maria) {
+    const mx = cx + m.x * r;
+    const my = cy + m.y * r;
+    const mr = m.r * r;
+    const mariaGrad = ctx.createRadialGradient(mx, my, 0, mx, my, mr);
+    mariaGrad.addColorStop(0, 'rgba(180, 175, 165, 0.15)');
+    mariaGrad.addColorStop(0.7, 'rgba(180, 175, 165, 0.08)');
+    mariaGrad.addColorStop(1, 'rgba(180, 175, 165, 0)');
+    ctx.fillStyle = mariaGrad;
+    ctx.beginPath();
+    ctx.arc(mx, my, mr, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // --- Shadow (terminator) ---
+  // Phase 0..1: 0=new (all dark), 0.25=first quarter, 0.5=full, 0.75=last quarter
+  // The terminator is an ellipse whose x-radius varies with phase.
+  // For waxing phases (0..0.5): shadow on the left, shrinking rightward.
+  // For waning phases (0.5..1): shadow on the right, growing leftward.
+
+  const frac = illumination / 100; // 0..1
+
+  if (frac < 0.99) { // Don't draw shadow if full moon
+    // Determine which side is lit
+    const waxing = phase < 0.5;
+
+    // The terminator x-radius: maps illumination to an ellipse width.
+    // At 0% illum → full circle shadow. At 50% → straight line (terminatorRx = 0).
+    // At 100% → no shadow.
+    // Formula: terminatorRx = |2*frac - 1| * r, but inverted
+    const terminatorRx = Math.abs(2 * frac - 1) * r;
+
+    ctx.beginPath();
+
+    if (waxing) {
+      // Shadow on the LEFT side
+      // Draw left semicircle
+      ctx.arc(cx, cy, r, -Math.PI / 2, Math.PI / 2, true); // left half
+
+      if (frac < 0.5) {
+        // Crescent: terminator bulges LEFT (into lit area)
+        ctx.ellipse(cx, cy, terminatorRx, r, 0, Math.PI / 2, -Math.PI / 2, true);
+      } else {
+        // Gibbous: terminator bulges RIGHT (into shadow)
+        ctx.ellipse(cx, cy, terminatorRx, r, 0, Math.PI / 2, -Math.PI / 2, false);
+      }
+    } else {
+      // Waning — shadow on the RIGHT side
+      ctx.arc(cx, cy, r, -Math.PI / 2, Math.PI / 2, false); // right half
+
+      if (frac < 0.5) {
+        // Crescent: terminator bulges RIGHT
+        ctx.ellipse(cx, cy, terminatorRx, r, 0, Math.PI / 2, -Math.PI / 2, false);
+      } else {
+        // Gibbous: terminator bulges LEFT
+        ctx.ellipse(cx, cy, terminatorRx, r, 0, Math.PI / 2, -Math.PI / 2, true);
+      }
+    }
+
+    ctx.closePath();
+    ctx.fillStyle = '#0a0a1a'; // very dark navy, not black
+    ctx.fill();
+
+    // Soften the terminator with a blurred edge
+    // Draw a thin gradient strip along the terminator
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.clip();
+
+    // Approximate terminator x-position
+    const termX = waxing
+      ? cx - (frac < 0.5 ? -terminatorRx : terminatorRx)
+      : cx + (frac < 0.5 ? -terminatorRx : terminatorRx);
+
+    const edgeGrad = ctx.createLinearGradient(termX - 4, 0, termX + 4, 0);
+    edgeGrad.addColorStop(0, 'rgba(10, 10, 26, 0)');
+    edgeGrad.addColorStop(0.5, 'rgba(10, 10, 26, 0.15)');
+    edgeGrad.addColorStop(1, 'rgba(10, 10, 26, 0)');
+    ctx.fillStyle = edgeGrad;
+    ctx.fillRect(termX - 6, cy - r, 12, r * 2);
+    ctx.restore();
+  }
+
+  ctx.restore();
+
+  // --- Update the CSS glow element ---
+  const glowEl = document.getElementById('moon-glow');
+  const glowPad = 30 + glowIntensity * 40;
+  glowEl.style.inset = `-${glowPad}px`;
+  glowEl.style.background = `radial-gradient(circle,
+    rgba(255, 254, 240, ${0.04 + glowIntensity * 0.08}) 0%,
+    rgba(255, 254, 240, ${0.02 + glowIntensity * 0.04}) 40%,
+    transparent 70%)`;
+}
+
+
+/* ==================== PARALLAX INPUT ==================== */
+
+function setupParallaxInput() {
+  // Detect mobile
+  isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
+  if (window.DeviceOrientationEvent) {
+    if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+      document.addEventListener('click', function reqPerm() {
+        DeviceOrientationEvent.requestPermission().then(state => {
+          if (state === 'granted') {
+            window.addEventListener('deviceorientation', onDeviceOrientation);
+          }
+        }).catch(() => {});
+        document.removeEventListener('click', reqPerm);
+      }, { once: false });
+    } else {
+      window.addEventListener('deviceorientation', onDeviceOrientation);
+    }
+  }
+
+  window.addEventListener('mousemove', onMouseMove);
+}
+
+function onDeviceOrientation(e) {
+  if (e.gamma === null || e.beta === null) return;
+  targetParallaxX = clamp(e.gamma / 45, -1, 1);
+  targetParallaxY = clamp((e.beta - 45) / 45, -1, 1);
+}
+
+function onMouseMove(e) {
+  // Normalised -1..1, used with smaller desktop offsets
+  targetParallaxX = (e.clientX / window.innerWidth - 0.5) * 2;
+  targetParallaxY = (e.clientY / window.innerHeight - 0.5) * 2;
+}
+
+
+/* ==================== MAIN INIT & ANIMATION LOOP ==================== */
+
+async function initScene() {
+  // --- Setup canvas ---
+  skyCanvas = document.getElementById('sky-canvas');
+  skyCtx = skyCanvas.getContext('2d');
+  const dpr = Math.min(window.devicePixelRatio, 2);
+  skyCanvas.width = window.innerWidth * dpr;
+  skyCanvas.height = window.innerHeight * dpr;
+
+  // --- Compute all data ---
+  const now = new Date();
+  const moonData = calcMoonPhase(now);
+  const sunData = calcSolar(now, userLocation.lat, userLocation.lon);
+  const sabbatData = calcSabbats(now.getFullYear());
+
+  // Select constellations for this month
+  const constellationKeys = selectConstellations();
+
+  // Compute star positions
+  computeStarPositions();
+
+  // Draw constellation (returns primary key)
+  const primaryConstellation = drawConstellations();
+
+  // Draw moon with real phase
+  drawMoon(moonData.illumination, moonData.phase);
+
+  // Setup parallax
+  setupParallaxInput();
+
+  // Handle resize
+  window.addEventListener('resize', () => {
+    const dpr = Math.min(window.devicePixelRatio, 2);
+    skyCanvas.width = window.innerWidth * dpr;
+    skyCanvas.height = window.innerHeight * dpr;
+    computeStarPositions();
+    drawConstellations();
+    drawMoon(moonData.illumination, moonData.phase);
+  });
+
+  // Start render loop
+  function animate() {
+    animationId = requestAnimationFrame(animate);
+    const time = performance.now() * 0.001;
+
+    // Smooth parallax (lerp factor 0.05 for desktop, 0.03 for mobile)
+    const lerpFactor = isMobile ? 0.03 : 0.05;
+    parallaxX += (targetParallaxX - parallaxX) * lerpFactor;
+    parallaxY += (targetParallaxY - parallaxY) * lerpFactor;
+
+    drawStars(time);
+    updateConstellationParallax();
+  }
+  animate();
+
+  // --- Fetch weather (async) ---
+  const weatherData = await fetchWeather(userLocation.lat, userLocation.lon);
+
+  // --- Build and log the VIGIL object ---
+  const constellationData = primaryConstellation && CONSTELLATIONS[primaryConstellation]
+    ? {
+        primary: CONSTELLATIONS[primaryConstellation].name,
+        stars: CONSTELLATIONS[primaryConstellation].stars,
+        lines: CONSTELLATIONS[primaryConstellation].lines,
+      }
+    : { primary: null, stars: [], lines: [] };
+
+  window.VIGIL = {
+    location: {
+      lat: userLocation.lat,
+      lon: userLocation.lon,
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    },
+    moon: moonData,
+    sun: {
+      sunrise: sunData.sunrise,
+      sunset: sunData.sunset,
+      solarNoon: sunData.solarNoon,
+      dayLength: sunData.dayLength,
+      dayLengthDelta: sunData.dayLengthDelta,
+    },
+    sabbat: {
+      current: sabbatData.current,
+      next: sabbatData.next,
+      nextName: sabbatData.nextName,
+      daysUntilNext: sabbatData.daysUntilNext,
+      nearSabbat: sabbatData.nearSabbat,
+    },
+    weather: weatherData,
+    constellation: constellationData,
+    wheelOfYear: sabbatData.wheelOfYear,
+  };
+
+  console.log('%c✦ VIGIL ✦', 'color: #ffd97d; font-size: 16px; font-weight: bold;');
+  console.log('%cPagan Nature Almanac — data for ' + now.toLocaleDateString(), 'color: #c8d8ff; font-size: 11px;');
+  console.log(window.VIGIL);
+}
+</script>
+</body>
+</html>
