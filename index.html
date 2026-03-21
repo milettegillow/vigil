@@ -316,12 +316,13 @@
           <path d="M6 13v-1a2 2 0 0 0-2 2v1a8 8 0 0 0 16 0v-3a2 2 0 0 0-2-2" />
         </svg>
       </div>
-      <div class="tab-icon" data-tab="settings" onclick="switchTab('settings')">
+      <div class="tab-icon" id="sound-toggle" onclick="toggleSound()">
         <svg viewBox="0 0 24 24">
           <circle cx="12" cy="12" r="3" />
           <path
             d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"
           />
+          <line id="mute-line" x1="4" y1="4" x2="20" y2="20" stroke-width="2.5" style="display:none" />
         </svg>
       </div>
     </nav>
@@ -346,6 +347,7 @@
       let isMobile = false;
       let animationId;
       let starScreenPositions = [];
+      let deepStarPositions = [];
       const starSpriteCache = new Map();
       let constellationStarNames = new Set();
       let activeConstellationKeys = [];
@@ -654,6 +656,21 @@
       }
 
       const FILL_STARS = generateFillStars();
+
+      function generateDeepStars() {
+        let seed = 9999;
+        function rand() { seed = (seed * 16807 + 0) % 2147483647; return seed / 2147483647; }
+        const stars = [];
+        for (let i = 0; i < 350; i++) {
+          const ra = rand() * 24;
+          const dec = Math.asin(2 * rand() - 1) * RAD;
+          const mag = 5.0 + rand() * 1.5; // mag 5.0 to 6.5
+          stars.push(['deep_' + i, ra, dec, mag, 0.3]);
+        }
+        return stars;
+      }
+
+      const DEEP_STARS = generateDeepStars();
 
       /* ==================== CONSTELLATION DATA ==================== */
 
@@ -1377,6 +1394,68 @@
         });
       }
 
+      /* ==================== AMBIENT AUDIO ==================== */
+
+      const ambientAudio = new Audio('crickets.wav');
+      ambientAudio.loop = true;
+      ambientAudio.volume = 0;
+      let soundEnabled = localStorage.getItem('vigil_sound') !== 'off';
+      let audioStarted = false;
+
+      function startAmbientAudio() {
+        if (audioStarted || !soundEnabled) return;
+        audioStarted = true;
+        ambientAudio.play().then(() => {
+          // Fade in over 3 seconds
+          const target = 0.25;
+          const steps = 60;
+          const interval = 3000 / steps;
+          let step = 0;
+          const fade = setInterval(() => {
+            step++;
+            ambientAudio.volume = Math.min(target, target * (step / steps));
+            if (step >= steps) clearInterval(fade);
+          }, interval);
+        }).catch(() => { audioStarted = false; });
+      }
+
+      function toggleSound() {
+        soundEnabled = !soundEnabled;
+        localStorage.setItem('vigil_sound', soundEnabled ? 'on' : 'off');
+        const muteLine = document.getElementById('mute-line');
+        const toggle = document.getElementById('sound-toggle');
+        if (soundEnabled) {
+          muteLine.style.display = 'none';
+          toggle.querySelector('svg').style.opacity = '';
+          if (!audioStarted) {
+            startAmbientAudio();
+          } else {
+            ambientAudio.volume = 0.25;
+          }
+        } else {
+          muteLine.style.display = '';
+          toggle.querySelector('svg').style.opacity = '0.3';
+          ambientAudio.volume = 0;
+        }
+      }
+
+      // Apply initial mute state on load
+      if (!soundEnabled) {
+        const muteLine = document.getElementById('mute-line');
+        const toggle = document.getElementById('sound-toggle');
+        if (muteLine) muteLine.style.display = '';
+        if (toggle) toggle.querySelector('svg').style.opacity = '0.3';
+      }
+
+      // Start audio on first user interaction
+      function onFirstInteraction() {
+        document.removeEventListener('click', onFirstInteraction);
+        document.removeEventListener('touchstart', onFirstInteraction);
+        if (soundEnabled) startAmbientAudio();
+      }
+      document.addEventListener('click', onFirstInteraction);
+      document.addEventListener('touchstart', onFirstInteraction);
+
       /* ==================== MILKY WAY (Layer 2 — drawn once) ==================== */
 
       function drawMilkyWay() {
@@ -1463,11 +1542,11 @@
         let coreR, spriteHalf;
 
         if (isHero) {
-          coreR = 1.4;  spriteHalf = 8.4;
+          coreR = 0.98; spriteHalf = 5.9;
         } else if (mag < 1) {
-          coreR = 1.05; spriteHalf = 6.3;
+          coreR = 0.84; spriteHalf = 5.0;
         } else if (mag < 2.5) {
-          coreR = 0.7;  spriteHalf = 4.2;
+          coreR = 0.63; spriteHalf = 3.8;
         } else if (mag < 4) {
           coreR = 0.56; spriteHalf = 2.45;
         } else {
@@ -1486,7 +1565,7 @@
 
         // --- Hero: outer halo ---
         if (isHero) {
-          const haloR = 7.7 * S;
+          const haloR = 5.4 * S;
           const haloGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, haloR);
           haloGrad.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0.06)`);
           haloGrad.addColorStop(0.35, `rgba(${r}, ${g}, ${b}, 0.025)`);
@@ -1519,7 +1598,7 @@
         // --- Diffraction spikes (hero stars only) ---
         if (isHero) {
           const spikeOp = 0.35;
-          const spikeLen = 6.3 * S;
+          const spikeLen = 4.4 * S;
           ctx.lineWidth = 1;
           for (let i = 0; i < 4; i++) {
             const a = i * Math.PI / 2;
@@ -1592,6 +1671,22 @@
             twinkleSpeed2: 8 + Math.random() * 12,
           });
         }
+
+        // Deep background stars — simple screen positions only
+        deepStarPositions = [];
+        for (const star of DEEP_STARS) {
+          const [name, ra, dec, mag] = star;
+          const { alt, az } = raDecToAltAz(ra, dec, lstDeg, userLocation.lat);
+          if (alt < -2) continue;
+          const pos = altAzToScreen(alt, az, w, h);
+          if (!pos) continue;
+          if (pos.x < -10 || pos.x > w + 10 || pos.y < -10 || pos.y > h + 10) continue;
+          deepStarPositions.push({
+            x: pos.x, y: pos.y,
+            opacity: 0.2 + (6.5 - mag) * 0.1, // 0.2 for mag 6.5, 0.35 for mag 5.0
+            size: 0.4 + (6.5 - mag) * 0.13,    // 0.4px for mag 6.5, 0.6px for mag 5.0
+          });
+        }
       }
 
       function drawStars(time) {
@@ -1603,6 +1698,15 @@
         skyCtx.setTransform(1, 0, 0, 1, 0, 0);
         skyCtx.clearRect(0, 0, skyCanvas.width, skyCanvas.height);
         skyCtx.scale(dpr, dpr);
+
+        // Deep background stars — tiny warm-white dots, no bloom
+        skyCtx.fillStyle = 'rgba(255, 254, 240, 1)';
+        for (const ds of deepStarPositions) {
+          skyCtx.globalAlpha = ds.opacity;
+          skyCtx.beginPath();
+          skyCtx.arc(ds.x + parallaxX, ds.y - parallaxY, ds.size, 0, Math.PI * 2);
+          skyCtx.fill();
+        }
 
         const maxNear = isMobile ? 15 : 8;
         const maxMid = isMobile ? 8 : 4;
