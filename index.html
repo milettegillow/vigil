@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Vigil</title>
 
@@ -26,7 +26,8 @@
     height: 100%;
     overflow: hidden;
     font-family: 'Cormorant Garamond', Georgia, serif;
-    background: #0a0015;
+    /* Layer 1: base deep sky gradient */
+    background: radial-gradient(ellipse at 50% 40%, #0a1628 0%, #060012 50%, #080010 100%);
     color: #fffef0;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -81,9 +82,7 @@
     transition: opacity 0.3s;
   }
 
-  #location-overlay .allow-btn:hover {
-    opacity: 0.7;
-  }
+  #location-overlay .allow-btn:hover { opacity: 0.7; }
 
   #location-overlay .skip-btn {
     font-size: 0.75rem;
@@ -92,76 +91,75 @@
     transition: opacity 0.3s;
   }
 
-  #location-overlay .skip-btn:hover {
-    opacity: 0.7;
-  }
+  #location-overlay .skip-btn:hover { opacity: 0.7; }
 
-  /* --- Star Canvas (real stars rendered via Canvas 2D) --- */
-  #sky-canvas {
+  /* --- Layer 2: Milky Way suggestion canvas --- */
+  #milkyway-canvas {
     position: fixed;
     inset: 0;
     z-index: 1;
+    pointer-events: none;
+  }
+
+  /* --- Layer 3: Star canvas --- */
+  #sky-canvas {
+    position: fixed;
+    inset: 0;
+    z-index: 2;
+  }
+
+  /* --- Layer 3.5: Atmosphere overlays (horizon + vignette) --- */
+  #atmosphere-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 3;
+    pointer-events: none;
+    /* Layer 3 horizon: warm navy at bottom 15% */
+    background:
+      linear-gradient(to top, rgba(13, 31, 60, 0.30) 0%, transparent 15%),
+      /* Layer 4 vignette: dark corners */
+      radial-gradient(ellipse at 50% 50%, transparent 40%, rgba(3, 0, 8, 0.40) 100%);
   }
 
   /* --- Constellation SVG Overlay --- */
   #constellation-layer {
     position: fixed;
     inset: 0;
-    z-index: 2;
+    z-index: 4;
     pointer-events: none;
   }
 
-  /* --- Moon Container --- */
+  .constellation-star {
+    fill: #fffef0;
+  }
+
+  .constellation-line {
+    stroke: #fffef0;
+    stroke-width: 0.8;
+    opacity: 0.4;
+  }
+
+  .constellation-label {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-style: italic;
+    font-size: 11px;
+    fill: #fffef0;
+    fill-opacity: 0.35;
+    text-anchor: middle;
+  }
+
+  /* --- Moon Three.js canvas --- */
   #moon-container {
     position: fixed;
-    z-index: 3;
+    z-index: 5;
     left: 50%;
     top: 40%;
     transform: translate(-50%, -50%);
     pointer-events: none;
   }
 
-  #moon-canvas {
+  #moon-three-canvas {
     display: block;
-  }
-
-  /* Moon glow aura — sized dynamically by JS */
-  #moon-glow {
-    position: absolute;
-    border-radius: 50%;
-    pointer-events: none;
-  }
-
-  /* Moon pulse animation */
-  @keyframes moonPulse {
-    0%, 100% { transform: translate(-50%, -50%) scale(1.0); }
-    50% { transform: translate(-50%, -50%) scale(1.03); }
-  }
-
-  #moon-container {
-    animation: moonPulse 4s ease-in-out infinite;
-  }
-
-  /* --- Constellation star twinkle --- */
-  @keyframes twinkle {
-    0%, 100% { opacity: 0.7; }
-    50% { opacity: 1.0; }
-  }
-
-  .constellation-star {
-    fill: #fffef0;
-    animation: twinkle 3s ease-in-out infinite;
-  }
-
-  .constellation-star:nth-child(odd) {
-    animation-duration: 4s;
-    animation-delay: -1.5s;
-  }
-
-  .constellation-line {
-    stroke: #fffef0;
-    stroke-width: 0.5;
-    opacity: 0.3;
   }
 
   /* --- Tab Navigation --- */
@@ -207,20 +205,17 @@
     transform: scale(1.15);
   }
 
-  /* --- View Containers --- */
   .view {
     position: fixed;
     inset: 0;
-    z-index: 5;
+    z-index: 6;
     display: none;
     align-items: center;
     justify-content: center;
     pointer-events: none;
   }
 
-  .view.active {
-    display: flex;
-  }
+  .view.active { display: flex; }
 </style>
 </head>
 <body>
@@ -232,16 +227,21 @@
   <button class="skip-btn" onclick="skipLocation()">or continue without</button>
 </div>
 
-<!-- ==================== SKY CANVAS (2D — real stars) ==================== -->
+<!-- ==================== LAYER 2: MILKY WAY ==================== -->
+<canvas id="milkyway-canvas"></canvas>
+
+<!-- ==================== LAYER 3: STAR CANVAS ==================== -->
 <canvas id="sky-canvas"></canvas>
 
-<!-- ==================== CONSTELLATION SVG OVERLAY ==================== -->
+<!-- ==================== LAYER 3.5: ATMOSPHERE ==================== -->
+<div id="atmosphere-overlay"></div>
+
+<!-- ==================== LAYER 4: CONSTELLATION SVG ==================== -->
 <svg id="constellation-layer" xmlns="http://www.w3.org/2000/svg"></svg>
 
-<!-- ==================== MOON ==================== -->
+<!-- ==================== LAYER 5: MOON (Three.js) ==================== -->
 <div id="moon-container">
-  <div id="moon-glow"></div>
-  <canvas id="moon-canvas"></canvas>
+  <canvas id="moon-three-canvas"></canvas>
 </div>
 
 <!-- ==================== TAB BAR ==================== -->
@@ -278,14 +278,30 @@
   </div>
 </nav>
 
+<!-- ==================== THREE.JS CDN ==================== -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
 <script>
 /* ============================================================
    VIGIL — A Pagan Nature Almanac
-   Stage 2: Real Data
+   Stage 2 + Visual Overhaul
    ============================================================ */
 
-// Global data object — populated by init, logged to console
 window.VIGIL = {};
+
+/* ==================== HOISTED STATE ==================== */
+let skyCanvas, skyCtx;
+let parallaxX = 0, parallaxY = 0;
+let targetParallaxX = 0, targetParallaxY = 0;
+let isMobile = false;
+let animationId;
+let starScreenPositions = [];
+let constellationStarNames = new Set();
+let activeConstellationKeys = [];
+let moonScene, moonCamera, moonRenderer, moonSphere, moonLight, moonGlowMesh;
+let moonPhaseValue = 0;
+let moonIllumination = 0;
+let moonRotationOffset = 0;
 
 /* ==================== UTILS ==================== */
 
@@ -306,7 +322,6 @@ function storeLocation(lat, lon) {
   localStorage.setItem('vigil_lon', lon);
 }
 
-/** Julian Date from a JS Date object. */
 function toJD(date) {
   const y = date.getUTCFullYear();
   const m = date.getUTCMonth() + 1;
@@ -319,16 +334,9 @@ function toJD(date) {
   return Math.floor(365.25 * (yr + 4716)) + Math.floor(30.6001 * (mo + 1)) + d + B - 1524.5;
 }
 
-/** Julian centuries since J2000.0 */
 function toJ2000(jd) { return (jd - 2451545.0) / 36525.0; }
-
-/** Normalise angle to 0..360 */
 function norm360(a) { a = a % 360; return a < 0 ? a + 360 : a; }
 
-/** Normalise angle to 0..2PI */
-function norm2PI(a) { a = a % (2 * Math.PI); return a < 0 ? a + 2 * Math.PI : a; }
-
-/** Greenwich Mean Sidereal Time in degrees from JD */
 function gmst(jd) {
   const T = toJ2000(jd);
   let st = 280.46061837 + 360.98564736629 * (jd - 2451545.0)
@@ -336,12 +344,8 @@ function gmst(jd) {
   return norm360(st);
 }
 
-/** Local Sidereal Time in degrees */
-function lst(jd, lonDeg) {
-  return norm360(gmst(jd) + lonDeg);
-}
+function lst(jd, lonDeg) { return norm360(gmst(jd) + lonDeg); }
 
-/** Convert RA(hours)/Dec(deg) to Alt/Az given LST(deg) and lat(deg). Returns {alt, az} in degrees. */
 function raDecToAltAz(raHours, decDeg, lstDeg, latDeg) {
   const ha = (lstDeg - raHours * 15) * DEG;
   const dec = decDeg * DEG;
@@ -354,14 +358,10 @@ function raDecToAltAz(raHours, decDeg, lstDeg, latDeg) {
   return { alt: alt * RAD, az: az * RAD };
 }
 
-/**
- * Project alt/az to screen x,y using stereographic projection.
- * Centre of screen = zenith. Returns null if below horizon (alt < 0).
- */
 function altAzToScreen(alt, az, w, h) {
-  if (alt < -5) return null; // slightly below horizon OK for continuity
-  const r = Math.cos(alt * DEG) / (1 + Math.sin(alt * DEG)); // stereographic radius (0 at zenith, 1 at horizon)
-  const scale = Math.min(w, h) * 0.48; // fit sky dome to screen
+  if (alt < -5) return null;
+  const r = Math.cos(alt * DEG) / (1 + Math.sin(alt * DEG));
+  const scale = Math.min(w, h) * 0.48;
   const x = w / 2 + r * Math.sin(az * DEG) * scale;
   const y = h / 2 - r * Math.cos(az * DEG) * scale;
   return { x, y };
@@ -369,8 +369,6 @@ function altAzToScreen(alt, az, w, h) {
 
 
 /* ==================== STAR CATALOGUE ==================== */
-// 150 brightest stars: [name, RA(hours), Dec(deg), Vmag, B-V]
-// From Yale Bright Star Catalogue (abbreviated)
 
 const STAR_CATALOGUE = [
   ['Sirius',6.752,-16.72,-1.46,0.00],
@@ -473,7 +471,6 @@ const STAR_CATALOGUE = [
   ['Caph',0.153,59.15,2.27,0.34],
   ['Ruchbah',1.431,60.24,2.68,0.13],
   ['Navi',0.945,60.72,2.47,-0.15],
-  // --- Additional stars for sky coverage ---
   ['Deneb Kaitos',0.726,-17.99,2.04,1.02],
   ['Mirach',1.163,35.62,2.05,1.58],
   ['Alpheratz',0.140,29.09,2.06,-0.04],
@@ -527,10 +524,11 @@ const STAR_CATALOGUE = [
   ['Cebalrai',17.724,4.57,2.77,0.97],
 ];
 
+// The 5 stars that get a noticeable twinkle
+const TWINKLE_STARS = new Set(['Sirius','Canopus','Arcturus','Vega','Capella']);
+
 
 /* ==================== CONSTELLATION DATA ==================== */
-// Each constellation: { name, stars: [{name, ra, dec}], lines: [[i,j],...] }
-// RA in hours, Dec in degrees — real coordinates
 
 const CONSTELLATIONS = {
   orion: {
@@ -729,21 +727,20 @@ const CONSTELLATIONS = {
   },
 };
 
-// Constellation visibility by month and hemisphere
 const CONSTELLATION_SCHEDULE = {
   north: [
-    ['orion','taurus','gemini'],      // Jan
-    ['orion','taurus','gemini'],      // Feb
-    ['leo','cancer','gemini'],        // Mar
-    ['leo','cancer','virgo'],         // Apr
-    ['virgo','leo','bootes'],         // May
-    ['virgo','bootes','scorpius'],    // Jun
-    ['scorpius','sagittarius','lyra'],// Jul
-    ['sagittarius','lyra','aquila'],  // Aug
-    ['pegasus','aquila','cygnus'],    // Sep
-    ['pegasus','cygnus','andromeda'], // Oct
-    ['andromeda','perseus','aries'],  // Nov
-    ['orion','perseus','taurus'],     // Dec
+    ['orion','taurus','gemini'],
+    ['orion','taurus','gemini'],
+    ['leo','cancer','gemini'],
+    ['leo','cancer','virgo'],
+    ['virgo','leo','bootes'],
+    ['virgo','bootes','scorpius'],
+    ['scorpius','sagittarius','lyra'],
+    ['sagittarius','lyra','aquila'],
+    ['pegasus','aquila','cygnus'],
+    ['pegasus','cygnus','andromeda'],
+    ['andromeda','perseus','aries'],
+    ['orion','perseus','taurus'],
   ],
   south: [
     ['orion','taurus','gemini'],
@@ -764,33 +761,16 @@ const CONSTELLATION_SCHEDULE = {
 
 /* ==================== MOON PHASE CALCULATION (Meeus) ==================== */
 
-/**
- * Calculate moon phase data for a given date.
- * Based on Jean Meeus "Astronomical Algorithms" — simplified lunation algorithm.
- */
 function calcMoonPhase(date) {
   const jd = toJD(date);
   const T = toJ2000(jd);
-
-  // Synodic month = 29.53058868 days
   const SYNODIC = 29.53058868;
-
-  // Mean phase calculation (Meeus Ch.49 simplified)
-  // Days since known new moon: Jan 6, 2000 18:14 UTC (JD 2451550.1)
   const daysSinceNew = jd - 2451550.1;
   const lunations = daysSinceNew / SYNODIC;
   const age = (lunations - Math.floor(lunations)) * SYNODIC;
-
-  // Moon's mean anomaly (simplified Meeus)
-  const sunMeanAnomaly = norm360(357.5291 + 35999.0503 * T) * DEG;
-  const moonMeanAnomaly = norm360(134.9634 + 477198.8676 * T) * DEG;
   const moonElongation = norm360(297.8502 + 445267.1115 * T) * DEG;
-
-  // Phase angle (illumination) — more accurate via elongation
-  const i = Math.acos(Math.cos(moonElongation) * Math.cos(0.00)) ; // simplified
   const illumination = (1 - Math.cos(moonElongation)) / 2 * 100;
 
-  // Phase name from age
   let phaseName;
   if (age < 1.85)       phaseName = 'New Moon';
   else if (age < 7.38)  phaseName = 'Waxing Crescent';
@@ -802,16 +782,11 @@ function calcMoonPhase(date) {
   else if (age < 27.68) phaseName = 'Waning Crescent';
   else                   phaseName = 'New Moon';
 
-  // Phase value 0..1 (0 = new, 0.5 = full)
   const phase = age / SYNODIC;
-
-  // Days until next full moon (age ~14.77)
   let daysToFull = 14.77 - age;
   if (daysToFull < 0) daysToFull += SYNODIC;
-
-  // Days until next new moon
   let daysToNew = SYNODIC - age;
-  if (daysToNew < 0.5) daysToNew = 0; // basically now
+  if (daysToNew < 0.5) daysToNew = 0;
 
   return {
     phase: Math.round(phase * 1000) / 1000,
@@ -826,92 +801,63 @@ function calcMoonPhase(date) {
 
 /* ==================== SOLAR CALCULATIONS (NOAA) ==================== */
 
-/**
- * NOAA solar position algorithm.
- * Returns sunrise, sunset, solar noon (as Date objects), day length.
- */
 function calcSolar(date, lat, lon) {
-  // Work with local midnight
   const year = date.getFullYear();
   const month = date.getMonth();
   const day = date.getDate();
-  const localMidnight = new Date(year, month, day, 0, 0, 0);
   const jd = toJD(new Date(Date.UTC(year, month, day, 12, 0, 0)));
   const T = toJ2000(jd);
 
-  // Solar mean anomaly (degrees)
   const M = norm360(357.52911 + 35999.05029 * T - 0.0001537 * T * T);
-  // Equation of center
   const C = (1.9146 - 0.004817 * T - 0.000014 * T * T) * Math.sin(M * DEG)
           + (0.019993 - 0.000101 * T) * Math.sin(2 * M * DEG)
           + 0.00029 * Math.sin(3 * M * DEG);
-  // Sun's geometric mean longitude
   const L0 = norm360(280.46646 + 36000.76983 * T + 0.0003032 * T * T);
   const sunLon = norm360(L0 + C);
-  // Apparent longitude
   const omega = 125.04 - 1934.136 * T;
   const lambda = sunLon - 0.00569 - 0.00478 * Math.sin(omega * DEG);
-  // Obliquity of ecliptic
   const eps0 = 23.4393 - 0.01300 * T;
   const eps = eps0 + 0.00256 * Math.cos(omega * DEG);
-  // Sun declination
   const sinDec = Math.sin(eps * DEG) * Math.sin(lambda * DEG);
   const decl = Math.asin(sinDec) * RAD;
-  // Equation of Time (minutes)
-  const y = Math.tan(eps * DEG / 2) ** 2;
+  const y2 = Math.tan(eps * DEG / 2) ** 2;
   const eqTime = 4 * RAD * (
-    y * Math.sin(2 * L0 * DEG)
+    y2 * Math.sin(2 * L0 * DEG)
     - 2 * 0.01671 * Math.sin(M * DEG)
-    + 4 * 0.01671 * y * Math.sin(M * DEG) * Math.cos(2 * L0 * DEG)
-    - 0.5 * y * y * Math.sin(4 * L0 * DEG)
+    + 4 * 0.01671 * y2 * Math.sin(M * DEG) * Math.cos(2 * L0 * DEG)
+    - 0.5 * y2 * y2 * Math.sin(4 * L0 * DEG)
     - 1.25 * 0.01671 * 0.01671 * Math.sin(2 * M * DEG)
   );
 
-  // Hour angle for sunrise/sunset (degrees)
-  const zenith = 90.833; // official zenith for sunrise/sunset
+  const zenith = 90.833;
   const cosHA = (Math.cos(zenith * DEG) / (Math.cos(lat * DEG) * Math.cos(decl * DEG)))
               - Math.tan(lat * DEG) * Math.tan(decl * DEG);
 
-  // Check for polar day/night
-  if (cosHA > 1) {
-    // Sun never rises (polar night)
-    return { sunrise: null, sunset: null, solarNoon: null, dayLength: 0, dayLengthDelta: 0 };
-  }
-  if (cosHA < -1) {
-    // Sun never sets (midnight sun)
-    return { sunrise: null, sunset: null, solarNoon: null, dayLength: 24 * 60, dayLengthDelta: 0 };
-  }
+  if (cosHA > 1) return { sunrise: null, sunset: null, solarNoon: null, dayLength: 0, dayLengthDelta: 0 };
+  if (cosHA < -1) return { sunrise: null, sunset: null, solarNoon: null, dayLength: '24h 0m', dayLengthDelta: 0 };
 
   const HA = Math.acos(clamp(cosHA, -1, 1)) * RAD;
-
-  // Solar noon (minutes from midnight UTC)
-  const noonUTC = 720 - 4 * lon - eqTime; // in minutes
+  const noonUTC = 720 - 4 * lon - eqTime;
   const sunriseUTC = noonUTC - HA * 4;
   const sunsetUTC = noonUTC + HA * 4;
-
-  // Get timezone offset in minutes
   const tzOffset = -date.getTimezoneOffset();
 
-  // Convert to local Date objects
   function minutesToDate(mins) {
-    const localMins = mins + tzOffset;
     const d = new Date(year, month, day);
-    d.setMinutes(localMins);
+    d.setMinutes(mins + tzOffset);
     return d;
   }
 
   const sunrise = minutesToDate(sunriseUTC);
   const sunset = minutesToDate(sunsetUTC);
   const solarNoon = minutesToDate(noonUTC);
-  const dayLengthMin = 2 * HA * 4; // in minutes
+  const dayLengthMin = 2 * HA * 4;
 
-  // Calculate yesterday's day length for delta
-  const yesterday = new Date(year, month, day - 1);
+  // Yesterday's day length for delta
   const jdY = toJD(new Date(Date.UTC(year, month, day - 1, 12, 0, 0)));
   const TY = toJ2000(jdY);
   const MY = norm360(357.52911 + 35999.05029 * TY - 0.0001537 * TY * TY);
-  const CY = (1.9146 - 0.004817 * TY) * Math.sin(MY * DEG)
-           + 0.019993 * Math.sin(2 * MY * DEG);
+  const CY = (1.9146 - 0.004817 * TY) * Math.sin(MY * DEG) + 0.019993 * Math.sin(2 * MY * DEG);
   const L0Y = norm360(280.46646 + 36000.76983 * TY);
   const sunLonY = norm360(L0Y + CY);
   const omegaY = 125.04 - 1934.136 * TY;
@@ -921,25 +867,20 @@ function calcSolar(date, lat, lon) {
   const cosHAY = (Math.cos(90.833 * DEG) / (Math.cos(lat * DEG) * Math.cos(declY * DEG)))
                - Math.tan(lat * DEG) * Math.tan(declY * DEG);
   let dayLengthYesterday = 0;
-  if (cosHAY >= -1 && cosHAY <= 1) {
-    dayLengthYesterday = 2 * Math.acos(clamp(cosHAY, -1, 1)) * RAD * 4;
-  }
+  if (cosHAY >= -1 && cosHAY <= 1) dayLengthYesterday = 2 * Math.acos(clamp(cosHAY, -1, 1)) * RAD * 4;
   const dayLengthDelta = Math.round(dayLengthMin - dayLengthYesterday);
 
   const hours = Math.floor(dayLengthMin / 60);
   const mins = Math.round(dayLengthMin % 60);
 
   return {
-    sunrise,
-    sunset,
-    solarNoon,
+    sunrise, sunset, solarNoon,
     dayLength: `${hours}h ${mins}m`,
     dayLengthMinutes: Math.round(dayLengthMin),
-    dayLengthDelta, // minutes, positive = getting longer
+    dayLengthDelta,
   };
 }
 
-/** Is it currently daytime? Use real sunrise/sunset if available. */
 function isDaytime() {
   if (window.VIGIL && window.VIGIL.sun && window.VIGIL.sun.sunrise && window.VIGIL.sun.sunset) {
     const now = new Date();
@@ -952,186 +893,105 @@ function isDaytime() {
 
 /* ==================== SABBAT CALENDAR ==================== */
 
-/**
- * Calculate the 8 sabbats for a given year.
- * Solstice/equinox dates computed from Jean Meeus algorithm.
- */
 function calcSabbats(year) {
-  // Approximate solstice/equinox using Meeus table 27.a (for years 2000-2100)
-  // Returns JDE (Julian Ephemeris Day) then converts to Date
   function equinoxSolstice(y, event) {
     const Y = (y - 2000) / 1000;
     let jde;
     switch (event) {
-      case 'spring':
-        jde = 2451623.80984 + 365242.37404 * Y + 0.05169 * Y*Y
-            - 0.00411 * Y*Y*Y - 0.00057 * Y*Y*Y*Y;
-        break;
-      case 'summer':
-        jde = 2451716.56767 + 365241.62603 * Y + 0.00325 * Y*Y
-            + 0.00888 * Y*Y*Y - 0.00030 * Y*Y*Y*Y;
-        break;
-      case 'autumn':
-        jde = 2451810.21715 + 365242.01767 * Y - 0.11575 * Y*Y
-            + 0.00337 * Y*Y*Y + 0.00078 * Y*Y*Y*Y;
-        break;
-      case 'winter':
-        jde = 2451900.05952 + 365242.74049 * Y - 0.06223 * Y*Y
-            - 0.00823 * Y*Y*Y + 0.00032 * Y*Y*Y*Y;
-        break;
+      case 'spring': jde = 2451623.80984 + 365242.37404*Y + 0.05169*Y*Y - 0.00411*Y*Y*Y - 0.00057*Y*Y*Y*Y; break;
+      case 'summer': jde = 2451716.56767 + 365241.62603*Y + 0.00325*Y*Y + 0.00888*Y*Y*Y - 0.00030*Y*Y*Y*Y; break;
+      case 'autumn': jde = 2451810.21715 + 365242.01767*Y - 0.11575*Y*Y + 0.00337*Y*Y*Y + 0.00078*Y*Y*Y*Y; break;
+      case 'winter': jde = 2451900.05952 + 365242.74049*Y - 0.06223*Y*Y - 0.00823*Y*Y*Y + 0.00032*Y*Y*Y*Y; break;
     }
-    // Convert JDE to Date (approximate — ignoring delta-T correction)
-    const msPerDay = 86400000;
-    const epoch = new Date(Date.UTC(2000, 0, 1, 12, 0, 0)); // J2000 = JD 2451545.0
-    const msSinceEpoch = (jde - 2451545.0) * msPerDay;
-    return new Date(epoch.getTime() + msSinceEpoch);
+    const epoch = new Date(Date.UTC(2000, 0, 1, 12, 0, 0));
+    return new Date(epoch.getTime() + (jde - 2451545.0) * 86400000);
   }
 
   const springEq = equinoxSolstice(year, 'spring');
   const summerSol = equinoxSolstice(year, 'summer');
   const autumnEq = equinoxSolstice(year, 'autumn');
   const winterSol = equinoxSolstice(year, 'winter');
-
-  // Also need previous year's winter solstice for Wheel of Year
   const prevWinterSol = equinoxSolstice(year - 1, 'winter');
 
   const sabbats = [
-    { name: 'Yule',        date: winterSol },
-    { name: 'Imbolc',      date: new Date(year, 1, 1) },  // Feb 1
-    { name: 'Ostara',      date: springEq },
-    { name: 'Beltane',     date: new Date(year, 4, 1) },  // May 1
-    { name: 'Litha',       date: summerSol },
-    { name: 'Lughnasadh',  date: new Date(year, 7, 1) },  // Aug 1
-    { name: 'Mabon',       date: autumnEq },
-    { name: 'Samhain',     date: new Date(year, 9, 31) }, // Oct 31
+    { name: 'Yule', date: winterSol },
+    { name: 'Imbolc', date: new Date(year, 1, 1) },
+    { name: 'Ostara', date: springEq },
+    { name: 'Beltane', date: new Date(year, 4, 1) },
+    { name: 'Litha', date: summerSol },
+    { name: 'Lughnasadh', date: new Date(year, 7, 1) },
+    { name: 'Mabon', date: autumnEq },
+    { name: 'Samhain', date: new Date(year, 9, 31) },
   ];
-
-  // Sort by date
   sabbats.sort((a, b) => a.date - b.date);
 
   const now = new Date();
   const todayMs = now.getTime();
   const oneDay = 86400000;
-
-  // Find next sabbat
-  let nextSabbat = null;
-  let daysUntilNext = Infinity;
-  let nearSabbat = null;
+  let nextSabbat = null, daysUntilNext = Infinity, nearSabbat = null;
 
   for (const s of sabbats) {
     const diff = Math.ceil((s.date.getTime() - todayMs) / oneDay);
-    if (diff >= 0 && diff < daysUntilNext) {
-      daysUntilNext = diff;
-      nextSabbat = s;
-    }
-    // Check if within 3 days
-    if (Math.abs(diff) <= 3) {
-      nearSabbat = s.name;
-    }
+    if (diff >= 0 && diff < daysUntilNext) { daysUntilNext = diff; nextSabbat = s; }
+    if (Math.abs(diff) <= 3) nearSabbat = s.name;
   }
-
-  // If no future sabbat this year, next is Imbolc next year
   if (!nextSabbat) {
     nextSabbat = { name: 'Imbolc', date: new Date(year + 1, 1, 1) };
     daysUntilNext = Math.ceil((nextSabbat.date.getTime() - todayMs) / oneDay);
   }
 
-  // Wheel of Year position (0/1 = Yule, 0.125 = Imbolc, etc.)
-  // Based on position between previous Yule and next Yule
-  const yuleThis = winterSol;
-  const yulePrev = prevWinterSol;
+  const yuleThis = winterSol, yulePrev = prevWinterSol;
   let wheelPosition;
   if (todayMs >= yuleThis.getTime()) {
-    // Past this year's Yule — between Yule(this) and Yule(next)
     const yuleNext = equinoxSolstice(year + 1, 'winter');
     wheelPosition = (todayMs - yuleThis.getTime()) / (yuleNext.getTime() - yuleThis.getTime());
   } else {
-    // Between prev Yule and this Yule
     wheelPosition = (todayMs - yulePrev.getTime()) / (yuleThis.getTime() - yulePrev.getTime());
   }
 
-  // Current sabbat "season" (the most recent sabbat)
-  let currentSabbat = sabbats[sabbats.length - 1].name; // default to last
+  let currentSabbat = sabbats[sabbats.length - 1].name;
   for (let i = sabbats.length - 1; i >= 0; i--) {
-    if (todayMs >= sabbats[i].date.getTime()) {
-      currentSabbat = sabbats[i].name;
-      break;
-    }
+    if (todayMs >= sabbats[i].date.getTime()) { currentSabbat = sabbats[i].name; break; }
   }
 
   return {
-    current: currentSabbat,
-    next: nextSabbat.date,
-    nextName: nextSabbat.name,
-    daysUntilNext,
-    nearSabbat,
-    wheelOfYear: Math.round(wheelPosition * 1000) / 1000,
-    all: sabbats,
+    current: currentSabbat, next: nextSabbat.date, nextName: nextSabbat.name,
+    daysUntilNext, nearSabbat,
+    wheelOfYear: Math.round(wheelPosition * 1000) / 1000, all: sabbats,
   };
 }
 
 
 /* ==================== WEATHER (Open-Meteo) ==================== */
 
-/**
- * Fetch weather from Open-Meteo (free, no API key).
- */
 async function fetchWeather(lat, lon) {
   const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weathercode,windspeed_10m,winddirection_10m,cloudcover&daily=sunrise,sunset&timezone=auto`;
   try {
     const res = await fetch(url);
     const data = await res.json();
     const c = data.current;
-
-    const windDir = degToCompass(c.winddirection_10m);
-    const description = weatherCodeToDescription(c.weathercode);
+    const windDir = ['N','NE','E','SE','S','SW','W','NW'][Math.round(c.winddirection_10m / 45) % 8];
     const cloud = c.cloudcover;
-
-    let stargazeQuality;
+    let description, stargazeQuality;
+    const code = c.weathercode;
+    if (code === 0) description = 'clear';
+    else if (code <= 3) description = 'partly cloudy';
+    else if (code <= 49) description = 'foggy';
+    else if (code <= 69) description = 'rainy';
+    else if (code <= 79) description = 'snowy';
+    else if (code <= 84) description = 'rainy';
+    else if (code <= 89) description = 'snowy';
+    else if (code <= 99) description = 'stormy';
+    else description = 'overcast';
     if (cloud < 20) stargazeQuality = 'excellent';
     else if (cloud < 40) stargazeQuality = 'good';
     else if (cloud < 70) stargazeQuality = 'fair';
     else stargazeQuality = 'poor';
-
-    return {
-      cloudCover: cloud,
-      windSpeed: c.windspeed_10m,
-      windDirection: windDir,
-      weatherCode: c.weathercode,
-      description,
-      temperature: c.temperature_2m,
-      stargazeQuality,
-    };
+    return { cloudCover: cloud, windSpeed: c.windspeed_10m, windDirection: windDir, weatherCode: code, description, temperature: c.temperature_2m, stargazeQuality };
   } catch (e) {
     console.warn('Weather fetch failed:', e);
-    return {
-      cloudCover: null,
-      windSpeed: null,
-      windDirection: null,
-      weatherCode: null,
-      description: 'unavailable',
-      temperature: null,
-      stargazeQuality: 'unknown',
-    };
+    return { cloudCover: null, windSpeed: null, windDirection: null, weatherCode: null, description: 'unavailable', temperature: null, stargazeQuality: 'unknown' };
   }
-}
-
-function degToCompass(deg) {
-  const dirs = ['N','NE','E','SE','S','SW','W','NW'];
-  return dirs[Math.round(deg / 45) % 8];
-}
-
-function weatherCodeToDescription(code) {
-  if (code === 0) return 'clear';
-  if (code <= 3) return 'partly cloudy';
-  if (code <= 49) return 'foggy';
-  if (code <= 59) return 'rainy';
-  if (code <= 69) return 'rainy';
-  if (code <= 79) return 'snowy';
-  if (code <= 84) return 'rainy';
-  if (code <= 89) return 'snowy';
-  if (code <= 99) return 'stormy';
-  return 'overcast';
 }
 
 
@@ -1179,7 +1039,6 @@ function dismissOverlay() {
 /* ==================== TAB SYSTEM ==================== */
 
 let activeTab = 'sky';
-
 function switchTab(tabName) {
   activeTab = tabName;
   document.querySelectorAll('.tab-icon').forEach(el => {
@@ -1188,91 +1047,123 @@ function switchTab(tabName) {
 }
 
 
-/* ==================== REAL STAR RENDERING (Canvas 2D) ==================== */
+/* ==================== MILKY WAY (Layer 2 — drawn once) ==================== */
 
-let skyCanvas, skyCtx;
-let parallaxX = 0, parallaxY = 0;
-let targetParallaxX = 0, targetParallaxY = 0;
-let isMobile = false;
-let animationId;
-let starScreenPositions = []; // cached {x, y, mag, bv, name, brightness}
-let constellationStarNames = new Set(); // names of stars in active constellations
+function drawMilkyWay() {
+  const canvas = document.getElementById('milkyway-canvas');
+  const dpr = Math.min(window.devicePixelRatio, 2);
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  canvas.width = w * dpr;
+  canvas.height = h * dpr;
+  canvas.style.width = w + 'px';
+  canvas.style.height = h + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
 
-/**
- * Colour from B-V index.
- */
+  // Draw a diagonal band of faint luminous blobs suggesting the Milky Way
+  // Band runs from lower-left to upper-right, ~30 degrees off vertical
+  const angle = -30 * DEG;
+  const cos30 = Math.cos(angle);
+  const sin30 = Math.sin(angle);
+
+  // 8 overlapping radial gradient blobs along the band
+  const blobs = [
+    { cx: 0.15, cy: 0.85, rx: 280, ry: 180, color: '#1a1040', alpha: 0.06 },
+    { cx: 0.25, cy: 0.72, rx: 320, ry: 200, color: '#0a1535', alpha: 0.05 },
+    { cx: 0.35, cy: 0.58, rx: 350, ry: 220, color: '#1a1040', alpha: 0.07 },
+    { cx: 0.42, cy: 0.46, rx: 400, ry: 250, color: '#0a1535', alpha: 0.06 },
+    { cx: 0.52, cy: 0.35, rx: 380, ry: 230, color: '#1a1040', alpha: 0.05 },
+    { cx: 0.62, cy: 0.24, rx: 340, ry: 200, color: '#0f1838', alpha: 0.06 },
+    { cx: 0.73, cy: 0.14, rx: 300, ry: 180, color: '#1a1040', alpha: 0.05 },
+    { cx: 0.85, cy: 0.05, rx: 260, ry: 160, color: '#0a1535', alpha: 0.04 },
+  ];
+
+  for (const blob of blobs) {
+    const bx = blob.cx * w;
+    const by = blob.cy * h;
+    const grad = ctx.createRadialGradient(bx, by, 0, bx, by, blob.rx);
+    // Parse the hex color to RGB for alpha blending
+    const hex = blob.color;
+    const r = parseInt(hex.slice(1,3), 16);
+    const g = parseInt(hex.slice(3,5), 16);
+    const b = parseInt(hex.slice(5,7), 16);
+    grad.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${blob.alpha})`);
+    grad.addColorStop(0.6, `rgba(${r}, ${g}, ${b}, ${blob.alpha * 0.5})`);
+    grad.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.ellipse(bx, by, blob.rx, blob.ry, angle, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+
+/* ==================== STAR RENDERING (Canvas 2D) ==================== */
+
 function bvToColor(bv) {
-  if (bv < -0.1) return { r: 202, g: 216, b: 255 }; // blue-white #cad8ff
-  if (bv < 0.2)  return { r: 255, g: 254, b: 240 }; // white #fffef0
-  if (bv < 0.8)  return { r: 255, g: 248, b: 230 }; // warm white
-  if (bv < 1.2)  return { r: 255, g: 244, b: 214 }; // pale yellow #fff4d6
-  return { r: 255, g: 217, b: 125 }; // warm gold #ffd97d
+  if (bv < -0.1) return { r: 202, g: 216, b: 255 };
+  if (bv < 0.2)  return { r: 255, g: 254, b: 240 };
+  if (bv < 0.8)  return { r: 255, g: 248, b: 230 };
+  if (bv < 1.2)  return { r: 255, g: 244, b: 214 };
+  return { r: 255, g: 217, b: 125 };
 }
 
 /**
- * Star visual size from magnitude. Brighter = lower mag = bigger.
- * Range: mag -1.5 → ~3px, mag 4 → ~0.5px
+ * Star rendering sizes — tight pinpoints, not blobs.
+ * Faint (mag 3-6): 0.5-1px — single pixel dots
+ * Medium (mag 1-3): 1-1.5px — tiny circle
+ * Bright (mag <1): 2-2.5px — small with subtle glow
  */
 function magToSize(mag) {
-  return Math.max(0.3, 2.8 - mag * 0.5);
+  if (mag > 3) return 0.6;
+  if (mag > 1) return 1.0 + (3 - mag) * 0.25;
+  return 2.0 + (1 - mag) * 0.3;
 }
 
-/**
- * Star opacity from magnitude.
- */
 function magToOpacity(mag) {
   if (mag < 0) return 1.0;
   if (mag < 1) return 0.95;
-  if (mag < 2) return 0.85;
-  if (mag < 3) return 0.65;
-  if (mag < 4) return 0.45;
-  return 0.3;
+  if (mag < 2) return 0.80;
+  if (mag < 3) return 0.55;
+  if (mag < 4) return 0.35;
+  return 0.22;
 }
 
-/**
- * Compute screen positions for all catalogue stars based on current time/location.
- */
 function computeStarPositions() {
   const now = new Date();
   const jd = toJD(now);
   const lstDeg = lst(jd, userLocation.lon);
-  const w = skyCanvas.width;
-  const h = skyCanvas.height;
   const dpr = Math.min(window.devicePixelRatio, 2);
+  const w = skyCanvas.width / dpr;
+  const h = skyCanvas.height / dpr;
 
   starScreenPositions = [];
 
   for (const star of STAR_CATALOGUE) {
     const [name, ra, dec, mag, bv] = star;
     const { alt, az } = raDecToAltAz(ra, dec, lstDeg, userLocation.lat);
-    if (alt < -5) continue; // below horizon
+    if (alt < -5) continue;
 
-    const pos = altAzToScreen(alt, az, w / dpr, h / dpr);
+    const pos = altAzToScreen(alt, az, w, h);
     if (!pos) continue;
-
-    // Check if off screen (with margin)
-    if (pos.x < -20 || pos.x > w / dpr + 20 || pos.y < -20 || pos.y > h / dpr + 20) continue;
-
-    const isConstellationStar = constellationStarNames.has(name);
+    if (pos.x < -20 || pos.x > w + 20 || pos.y < -20 || pos.y > h + 20) continue;
 
     starScreenPositions.push({
-      x: pos.x,
-      y: pos.y,
-      mag,
-      bv,
-      name,
+      x: pos.x, y: pos.y,
+      mag, bv, name,
       color: bvToColor(bv),
       size: magToSize(mag),
       opacity: magToOpacity(mag),
-      isBright: mag < 1.5,
-      isConstellationStar,
+      isConstellationStar: constellationStarNames.has(name),
+      isTwinkle: TWINKLE_STARS.has(name),
+      // Each twinkle star gets a random phase/period
+      twinklePhase: Math.random() * Math.PI * 2,
+      twinklePeriod: 2 + Math.random() * 2,
     });
   }
 }
 
-/**
- * Draw the starfield onto the 2D canvas.
- */
 function drawStars(time) {
   const dpr = Math.min(window.devicePixelRatio, 2);
   const w = skyCanvas.width / dpr;
@@ -1283,42 +1174,12 @@ function drawStars(time) {
   skyCtx.clearRect(0, 0, skyCanvas.width, skyCanvas.height);
   skyCtx.scale(dpr, dpr);
 
-  // Draw background gradient
-  const grad = skyCtx.createRadialGradient(w / 2, h * 0.4, 0, w / 2, h / 2, Math.max(w, h) * 0.8);
-  if (isDaytime()) {
-    grad.addColorStop(0, '#111d50');
-    grad.addColorStop(0.6, '#0e0820');
-    grad.addColorStop(1, '#0c0018');
-  } else {
-    grad.addColorStop(0, '#0d1b4b');
-    grad.addColorStop(0.6, '#0a0a2e');
-    grad.addColorStop(1, '#0a0015');
-  }
-  skyCtx.fillStyle = grad;
-  skyCtx.fillRect(0, 0, w, h);
-
-  // Subtle purple nebula bloom
-  const nebula = skyCtx.createRadialGradient(w * 0.6, h * 0.2, 0, w * 0.6, h * 0.2, w * 0.4);
-  nebula.addColorStop(0, 'rgba(60, 20, 80, 0.12)');
-  nebula.addColorStop(0.5, 'rgba(40, 10, 60, 0.06)');
-  nebula.addColorStop(1, 'rgba(0, 0, 0, 0)');
-  skyCtx.fillStyle = nebula;
-  skyCtx.fillRect(0, 0, w, h);
-
-  const nebula2 = skyCtx.createRadialGradient(w * 0.35, h * 0.28, 0, w * 0.35, h * 0.28, w * 0.25);
-  nebula2.addColorStop(0, 'rgba(30, 15, 70, 0.10)');
-  nebula2.addColorStop(1, 'rgba(0, 0, 0, 0)');
-  skyCtx.fillStyle = nebula2;
-  skyCtx.fillRect(0, 0, w, h);
-
-  // Parallax offsets per "layer" (based on magnitude as depth proxy)
-  // Desktop: max 8/4/2px. Mobile: keep existing feel.
+  // Parallax offsets: desktop max 8/4/2, mobile 15/8/4
   const maxNear = isMobile ? 15 : 8;
   const maxMid = isMobile ? 8 : 4;
   const maxFar = isMobile ? 4 : 2;
 
   for (const star of starScreenPositions) {
-    // Determine parallax layer from magnitude
     let pxOffset;
     if (star.mag < 1.5) pxOffset = maxNear;
     else if (star.mag < 3.0) pxOffset = maxMid;
@@ -1327,35 +1188,51 @@ function drawStars(time) {
     const sx = star.x + parallaxX * pxOffset;
     const sy = star.y - parallaxY * pxOffset;
 
-    // Subtle twinkle for bright stars
     let opacity = star.opacity;
-    if (star.isBright) {
-      opacity *= 0.9 + 0.1 * Math.sin(time * (2.0 + star.mag) + star.x * 0.1);
-    }
+    let size = star.size;
 
     // Constellation stars: slightly brighter
     if (star.isConstellationStar) {
-      opacity = Math.min(1.0, opacity * 1.3);
+      opacity = Math.min(1.0, opacity * 1.4);
+      size = Math.max(size, 1.2);
+    }
+
+    // Twinkle: only the 5 brightest — scale pulse, not opacity
+    if (star.isTwinkle) {
+      const pulse = 1.0 + 0.15 * Math.sin(time / star.twinklePeriod * Math.PI * 2 + star.twinklePhase);
+      size *= pulse;
     }
 
     const { r, g, b } = star.color;
 
-    // Only the brightest ~15 stars get a subtle glow
-    if (star.mag < 1.0) {
-      const glowSize = (2.0 - star.mag) * 3;
-      const glowGrad = skyCtx.createRadialGradient(sx, sy, 0, sx, sy, glowSize);
-      glowGrad.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${opacity * 0.15})`);
+    // Bright stars (mag < 1): subtle radial glow
+    if (star.mag < 1) {
+      const glowR = size * 3;
+      const glowGrad = skyCtx.createRadialGradient(sx, sy, 0, sx, sy, glowR);
+      glowGrad.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${opacity * 0.12})`);
+      glowGrad.addColorStop(0.4, `rgba(${r}, ${g}, ${b}, ${opacity * 0.04})`);
       glowGrad.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
       skyCtx.fillStyle = glowGrad;
       skyCtx.beginPath();
-      skyCtx.arc(sx, sy, glowSize, 0, Math.PI * 2);
+      skyCtx.arc(sx, sy, glowR, 0, Math.PI * 2);
+      skyCtx.fill();
+    }
+    // Medium stars (mag 1-3): very subtle glow
+    else if (star.mag < 3) {
+      const glowR = size * 2;
+      const glowGrad = skyCtx.createRadialGradient(sx, sy, 0, sx, sy, glowR);
+      glowGrad.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${opacity * 0.06})`);
+      glowGrad.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
+      skyCtx.fillStyle = glowGrad;
+      skyCtx.beginPath();
+      skyCtx.arc(sx, sy, glowR, 0, Math.PI * 2);
       skyCtx.fill();
     }
 
-    // Sharp pinpoint dot
+    // The star point itself — hard-edged
     skyCtx.fillStyle = `rgba(${r}, ${g}, ${b}, ${opacity})`;
     skyCtx.beginPath();
-    skyCtx.arc(sx, sy, star.size, 0, Math.PI * 2);
+    skyCtx.arc(sx, sy, size, 0, Math.PI * 2);
     skyCtx.fill();
   }
 
@@ -1365,33 +1242,21 @@ function drawStars(time) {
 
 /* ==================== CONSTELLATION RENDERER ==================== */
 
-let activeConstellationKeys = [];
-
-/**
- * Determine which constellations to show based on month and hemisphere.
- */
 function selectConstellations() {
-  const month = new Date().getMonth(); // 0-indexed
+  const month = new Date().getMonth();
   const hemi = userLocation.lat >= 0 ? 'north' : 'south';
   const keys = CONSTELLATION_SCHEDULE[hemi][month];
   activeConstellationKeys = keys.filter(k => CONSTELLATIONS[k]);
 
-  // Build set of constellation star names for brightness boost
   constellationStarNames.clear();
   for (const key of activeConstellationKeys) {
-    const c = CONSTELLATIONS[key];
-    for (const s of c.stars) {
+    for (const s of CONSTELLATIONS[key].stars) {
       constellationStarNames.add(s.n);
     }
   }
-
   return activeConstellationKeys;
 }
 
-/**
- * Draw constellation lines and stars in the SVG overlay.
- * Uses real RA/Dec positions projected to screen.
- */
 function drawConstellations() {
   const svg = document.getElementById('constellation-layer');
   const now = new Date();
@@ -1399,10 +1264,8 @@ function drawConstellations() {
   const lstDeg = lst(jd, userLocation.lon);
   const w = window.innerWidth;
   const h = window.innerHeight;
-
   let svgContent = '';
 
-  // Only draw the primary constellation (first in the list)
   const primaryKey = activeConstellationKeys[0];
   if (!primaryKey || !CONSTELLATIONS[primaryKey]) {
     svg.innerHTML = '';
@@ -1415,215 +1278,178 @@ function drawConstellations() {
   for (const s of constellation.stars) {
     const { alt, az } = raDecToAltAz(s.ra, s.dec, lstDeg, userLocation.lat);
     const pos = altAzToScreen(alt, az, w, h);
-    screenStars.push(pos); // may be null if below horizon
+    screenStars.push(pos);
   }
 
-  // Draw lines
+  // Lines
   for (const [a, b] of constellation.lines) {
-    const pa = screenStars[a];
-    const pb = screenStars[b];
+    const pa = screenStars[a]; const pb = screenStars[b];
     if (!pa || !pb) continue;
     svgContent += `<line class="constellation-line" x1="${pa.x}" y1="${pa.y}" x2="${pb.x}" y2="${pb.y}" />`;
   }
 
-  // Draw constellation star markers
+  // Star dots with glow filter
+  svgContent += `<defs><filter id="cg"><feGaussianBlur stdDeviation="2" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>`;
+  let sumX = 0, sumY = 0, count = 0;
   constellation.stars.forEach((s, i) => {
     const pos = screenStars[i];
     if (!pos) return;
-    svgContent += `<circle class="constellation-star" cx="${pos.x}" cy="${pos.y}" r="2" style="animation-delay: ${-i * 0.7}s" />`;
+    svgContent += `<circle class="constellation-star" cx="${pos.x}" cy="${pos.y}" r="2.5" filter="url(#cg)" opacity="0.8" />`;
+    sumX += pos.x; sumY += pos.y; count++;
   });
 
-  svg.innerHTML = svgContent;
+  // Constellation name label below the centre
+  if (count > 0) {
+    const labelX = sumX / count;
+    const labelY = sumY / count + 30;
+    svgContent += `<text class="constellation-label" x="${labelX}" y="${labelY}">${constellation.name}</text>`;
+  }
 
+  svg.innerHTML = svgContent;
   return primaryKey;
 }
-
-
-/* ==================== CONSTELLATION PARALLAX ==================== */
 
 function updateConstellationParallax() {
   const svg = document.getElementById('constellation-layer');
   if (!svg) return;
   const maxOffset = isMobile ? 8 : 4;
-  const offsetX = parallaxX * maxOffset;
-  const offsetY = -parallaxY * maxOffset;
-  svg.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
+  svg.style.transform = `translate(${parallaxX * maxOffset}px, ${-parallaxY * maxOffset}px)`;
 }
 
 
-/* ==================== MOON RENDERER ==================== */
+/* ==================== MOON — THREE.JS PHOTOREALISTIC ==================== */
 
-/**
- * Draw the moon with the correct phase.
- * @param {number} illumination - 0..100
- * @param {number} phase - 0..1 (0=new, 0.5=full)
- * @param {string} phaseName
- */
-function drawMoon(illumination, phase) {
-  const canvas = document.getElementById('moon-canvas');
-  const ctx = canvas.getContext('2d');
+function initMoonThreeJS(phase, illumination) {
+  moonPhaseValue = phase;
+  moonIllumination = illumination;
 
-  // Responsive size: 180px mobile, 200px desktop
-  const moonDiameter = window.innerWidth <= 600 ? 180 : 200;
-  const canvasSize = moonDiameter + 80; // extra space for glow
-  const r = moonDiameter / 2;
-  const cx = canvasSize / 2;
-  const cy = canvasSize / 2;
+  const container = document.getElementById('moon-container');
+  const moonSize = window.innerWidth <= 600 ? 180 : 220;
+  const canvasSize = moonSize + 120; // room for glow
 
-  const dpr = Math.min(window.devicePixelRatio, 2);
-  canvas.width = canvasSize * dpr;
-  canvas.height = canvasSize * dpr;
+  const canvas = document.getElementById('moon-three-canvas');
   canvas.style.width = canvasSize + 'px';
   canvas.style.height = canvasSize + 'px';
-  ctx.scale(dpr, dpr);
 
-  ctx.clearRect(0, 0, canvasSize, canvasSize);
+  // Scene
+  moonScene = new THREE.Scene();
 
-  // --- Moon glow halo (scales with illumination) ---
-  const glowIntensity = illumination / 100;
-  const glowRadius = r + 20 + glowIntensity * 30;
-  const glowAlpha = 0.04 + glowIntensity * 0.1;
+  // Camera: orthographic for consistent sizing
+  const aspect = 1;
+  const frustum = 1.8;
+  moonCamera = new THREE.OrthographicCamera(-frustum, frustum, frustum, -frustum, 0.1, 100);
+  moonCamera.position.z = 5;
 
-  const glowGrad = ctx.createRadialGradient(cx, cy, r * 0.8, cx, cy, glowRadius);
-  glowGrad.addColorStop(0, `rgba(255, 254, 240, ${glowAlpha})`);
-  glowGrad.addColorStop(0.5, `rgba(255, 254, 240, ${glowAlpha * 0.4})`);
+  // Renderer
+  moonRenderer = new THREE.WebGLRenderer({
+    canvas: canvas,
+    antialias: true,
+    alpha: true,
+  });
+  const dpr = Math.min(window.devicePixelRatio, 2);
+  moonRenderer.setPixelRatio(dpr);
+  moonRenderer.setSize(canvasSize, canvasSize);
+
+  // Moon sphere
+  const geometry = new THREE.SphereGeometry(1, 64, 64);
+  const textureLoader = new THREE.TextureLoader();
+
+  // Load NASA textures
+  const colorMap = textureLoader.load('moon_color.jpg');
+  const bumpMap = textureLoader.load('moon_bump.jpg');
+
+  const material = new THREE.MeshStandardMaterial({
+    map: colorMap,
+    bumpMap: bumpMap,
+    bumpScale: 0.04,
+    roughness: 0.9,
+    metalness: 0,
+  });
+
+  moonSphere = new THREE.Mesh(geometry, material);
+  moonScene.add(moonSphere);
+
+  // Directional light (the "sun") — positioned based on phase
+  // phase 0 = new (light behind), 0.25 = first quarter (right),
+  // 0.5 = full (front), 0.75 = last quarter (left)
+  moonLight = new THREE.DirectionalLight(0xffffff, 1.6);
+  updateMoonLightPosition(phase);
+  moonScene.add(moonLight);
+
+  // Ambient light for earthshine (very dim)
+  const ambient = new THREE.AmbientLight(0x334466, 0.05);
+  moonScene.add(ambient);
+
+  // Glow sprite behind the moon
+  const glowCanvas = document.createElement('canvas');
+  glowCanvas.width = 256;
+  glowCanvas.height = 256;
+  const gCtx = glowCanvas.getContext('2d');
+  const glowGrad = gCtx.createRadialGradient(128, 128, 20, 128, 128, 128);
+  glowGrad.addColorStop(0, 'rgba(255, 254, 240, 0.25)');
+  glowGrad.addColorStop(0.3, 'rgba(255, 254, 240, 0.10)');
+  glowGrad.addColorStop(0.6, 'rgba(255, 254, 240, 0.03)');
   glowGrad.addColorStop(1, 'rgba(255, 254, 240, 0)');
-  ctx.fillStyle = glowGrad;
-  ctx.beginPath();
-  ctx.arc(cx, cy, glowRadius, 0, Math.PI * 2);
-  ctx.fill();
+  gCtx.fillStyle = glowGrad;
+  gCtx.fillRect(0, 0, 256, 256);
 
-  // --- Moon disc: lit portion in warm off-white ---
-  ctx.beginPath();
-  ctx.arc(cx, cy, r, 0, Math.PI * 2);
-  ctx.fillStyle = '#f5f0e8';
-  ctx.fill();
+  const glowTexture = new THREE.CanvasTexture(glowCanvas);
+  const glowMaterial = new THREE.SpriteMaterial({
+    map: glowTexture,
+    transparent: true,
+    depthWrite: false,
+  });
+  moonGlowMesh = new THREE.Sprite(glowMaterial);
+  updateMoonGlow(illumination);
+  moonGlowMesh.position.z = -0.5; // behind the sphere
+  moonScene.add(moonGlowMesh);
 
-  // --- Maria (dark patches) — subtle texture ---
-  const maria = [
-    { x: -0.15, y: -0.2, r: 0.18 },  // Mare Imbrium
-    { x: 0.1,  y: -0.35, r: 0.12 },  // Mare Serenitatis
-    { x: 0.2,  y: -0.15, r: 0.14 },  // Mare Tranquillitatis
-    { x: 0.05, y: 0.05,  r: 0.10 },  // Mare Nubium
-    { x: -0.25, y: 0.1,  r: 0.08 },  // Oceanus Procellarum edge
-    { x: 0.15, y: 0.2,   r: 0.06 },  // small crater
-  ];
+  // Initial render
+  moonRenderer.render(moonScene, moonCamera);
+}
 
-  ctx.save();
-  ctx.beginPath();
-  ctx.arc(cx, cy, r, 0, Math.PI * 2);
-  ctx.clip();
+function updateMoonLightPosition(phase) {
+  if (!moonLight) return;
+  // Map phase to light angle on the x-z plane
+  const angle = phase * Math.PI * 2;
+  moonLight.position.set(
+    Math.sin(angle),
+    0.1,
+    -Math.cos(angle)
+  );
+  moonLight.position.normalize().multiplyScalar(5);
+}
 
-  for (const m of maria) {
-    const mx = cx + m.x * r;
-    const my = cy + m.y * r;
-    const mr = m.r * r;
-    const mariaGrad = ctx.createRadialGradient(mx, my, 0, mx, my, mr);
-    mariaGrad.addColorStop(0, 'rgba(180, 175, 165, 0.15)');
-    mariaGrad.addColorStop(0.7, 'rgba(180, 175, 165, 0.08)');
-    mariaGrad.addColorStop(1, 'rgba(180, 175, 165, 0)');
-    ctx.fillStyle = mariaGrad;
-    ctx.beginPath();
-    ctx.arc(mx, my, mr, 0, Math.PI * 2);
-    ctx.fill();
-  }
+function updateMoonGlow(illumination) {
+  if (!moonGlowMesh) return;
+  const frac = illumination / 100;
+  // Full moon = big diffuse glow (scale 5), crescent = tight glow (scale 2.5)
+  const glowScale = 2.5 + frac * 2.5;
+  moonGlowMesh.scale.set(glowScale, glowScale, 1);
+  moonGlowMesh.material.opacity = 0.10 + frac * 0.10;
+}
 
-  // --- Shadow (terminator) ---
-  // Phase 0..1: 0=new (all dark), 0.25=first quarter, 0.5=full, 0.75=last quarter
-  // The terminator is an ellipse whose x-radius varies with phase.
-  // For waxing phases (0..0.5): shadow on the left, shrinking rightward.
-  // For waning phases (0.5..1): shadow on the right, growing leftward.
-
-  const frac = illumination / 100; // 0..1
-
-  if (frac < 0.99) { // Don't draw shadow if full moon
-    // Determine which side is lit
-    const waxing = phase < 0.5;
-
-    // The terminator x-radius: maps illumination to an ellipse width.
-    // At 0% illum → full circle shadow. At 50% → straight line (terminatorRx = 0).
-    // At 100% → no shadow.
-    // Formula: terminatorRx = |2*frac - 1| * r, but inverted
-    const terminatorRx = Math.abs(2 * frac - 1) * r;
-
-    ctx.beginPath();
-
-    if (waxing) {
-      // Shadow on the LEFT side
-      // Draw left semicircle
-      ctx.arc(cx, cy, r, -Math.PI / 2, Math.PI / 2, true); // left half
-
-      if (frac < 0.5) {
-        // Crescent: terminator bulges LEFT (into lit area)
-        ctx.ellipse(cx, cy, terminatorRx, r, 0, Math.PI / 2, -Math.PI / 2, true);
-      } else {
-        // Gibbous: terminator bulges RIGHT (into shadow)
-        ctx.ellipse(cx, cy, terminatorRx, r, 0, Math.PI / 2, -Math.PI / 2, false);
-      }
-    } else {
-      // Waning — shadow on the RIGHT side
-      ctx.arc(cx, cy, r, -Math.PI / 2, Math.PI / 2, false); // right half
-
-      if (frac < 0.5) {
-        // Crescent: terminator bulges RIGHT
-        ctx.ellipse(cx, cy, terminatorRx, r, 0, Math.PI / 2, -Math.PI / 2, false);
-      } else {
-        // Gibbous: terminator bulges LEFT
-        ctx.ellipse(cx, cy, terminatorRx, r, 0, Math.PI / 2, -Math.PI / 2, true);
-      }
-    }
-
-    ctx.closePath();
-    ctx.fillStyle = '#0a0a1a'; // very dark navy, not black
-    ctx.fill();
-
-    // Soften the terminator with a blurred edge
-    // Draw a thin gradient strip along the terminator
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, Math.PI * 2);
-    ctx.clip();
-
-    // Approximate terminator x-position
-    const termX = waxing
-      ? cx - (frac < 0.5 ? -terminatorRx : terminatorRx)
-      : cx + (frac < 0.5 ? -terminatorRx : terminatorRx);
-
-    const edgeGrad = ctx.createLinearGradient(termX - 4, 0, termX + 4, 0);
-    edgeGrad.addColorStop(0, 'rgba(10, 10, 26, 0)');
-    edgeGrad.addColorStop(0.5, 'rgba(10, 10, 26, 0.15)');
-    edgeGrad.addColorStop(1, 'rgba(10, 10, 26, 0)');
-    ctx.fillStyle = edgeGrad;
-    ctx.fillRect(termX - 6, cy - r, 12, r * 2);
-    ctx.restore();
-  }
-
-  ctx.restore();
-
-  // --- Update the CSS glow element ---
-  const glowEl = document.getElementById('moon-glow');
-  const glowPad = 30 + glowIntensity * 40;
-  glowEl.style.inset = `-${glowPad}px`;
-  glowEl.style.background = `radial-gradient(circle,
-    rgba(255, 254, 240, ${0.04 + glowIntensity * 0.08}) 0%,
-    rgba(255, 254, 240, ${0.02 + glowIntensity * 0.04}) 40%,
-    transparent 70%)`;
+// Extremely slow moon rotation — 27 day period, barely perceptible
+function animateMoon(time) {
+  if (!moonSphere || !moonRenderer) return;
+  // Real moon rotates once per 27.3 days.
+  // At 60fps that's about 0.0000027 radians/frame.
+  // Speed it up just enough to be perceptible over a session (~5x real)
+  moonSphere.rotation.y = moonRotationOffset + time * 0.00002;
+  moonRenderer.render(moonScene, moonCamera);
 }
 
 
 /* ==================== PARALLAX INPUT ==================== */
 
 function setupParallaxInput() {
-  // Detect mobile
   isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
   if (window.DeviceOrientationEvent) {
     if (typeof DeviceOrientationEvent.requestPermission === 'function') {
       document.addEventListener('click', function reqPerm() {
         DeviceOrientationEvent.requestPermission().then(state => {
-          if (state === 'granted') {
-            window.addEventListener('deviceorientation', onDeviceOrientation);
-          }
+          if (state === 'granted') window.addEventListener('deviceorientation', onDeviceOrientation);
         }).catch(() => {});
         document.removeEventListener('click', reqPerm);
       }, { once: false });
@@ -1631,7 +1457,6 @@ function setupParallaxInput() {
       window.addEventListener('deviceorientation', onDeviceOrientation);
     }
   }
-
   window.addEventListener('mousemove', onMouseMove);
 }
 
@@ -1642,7 +1467,6 @@ function onDeviceOrientation(e) {
 }
 
 function onMouseMove(e) {
-  // Normalised -1..1, used with smaller desktop offsets
   targetParallaxX = (e.clientX / window.innerWidth - 0.5) * 2;
   targetParallaxY = (e.clientY / window.innerHeight - 0.5) * 2;
 }
@@ -1651,12 +1475,15 @@ function onMouseMove(e) {
 /* ==================== MAIN INIT & ANIMATION LOOP ==================== */
 
 async function initScene() {
-  // --- Setup canvas ---
+  // --- Setup star canvas ---
   skyCanvas = document.getElementById('sky-canvas');
   skyCtx = skyCanvas.getContext('2d');
   const dpr = Math.min(window.devicePixelRatio, 2);
   skyCanvas.width = window.innerWidth * dpr;
   skyCanvas.height = window.innerHeight * dpr;
+
+  // --- Draw Milky Way (once, static) ---
+  drawMilkyWay();
 
   // --- Compute all data ---
   const now = new Date();
@@ -1664,17 +1491,13 @@ async function initScene() {
   const sunData = calcSolar(now, userLocation.lat, userLocation.lon);
   const sabbatData = calcSabbats(now.getFullYear());
 
-  // Select constellations for this month
-  const constellationKeys = selectConstellations();
-
-  // Compute star positions
+  // Select constellations
+  selectConstellations();
   computeStarPositions();
-
-  // Draw constellation (returns primary key)
   const primaryConstellation = drawConstellations();
 
-  // Draw moon with real phase
-  drawMoon(moonData.illumination, moonData.phase);
+  // Init Three.js moon with real phase
+  initMoonThreeJS(moonData.phase, moonData.illumination);
 
   // Setup parallax
   setupParallaxInput();
@@ -1684,59 +1507,50 @@ async function initScene() {
     const dpr = Math.min(window.devicePixelRatio, 2);
     skyCanvas.width = window.innerWidth * dpr;
     skyCanvas.height = window.innerHeight * dpr;
+    drawMilkyWay();
     computeStarPositions();
     drawConstellations();
-    drawMoon(moonData.illumination, moonData.phase);
+    // Resize moon renderer
+    if (moonRenderer) {
+      const moonSize = window.innerWidth <= 600 ? 180 : 220;
+      const canvasSize = moonSize + 120;
+      moonRenderer.setSize(canvasSize, canvasSize);
+      const canvas = document.getElementById('moon-three-canvas');
+      canvas.style.width = canvasSize + 'px';
+      canvas.style.height = canvasSize + 'px';
+      moonRenderer.render(moonScene, moonCamera);
+    }
   });
 
-  // Start render loop
+  // Animation loop
   function animate() {
     animationId = requestAnimationFrame(animate);
     const time = performance.now() * 0.001;
 
-    // Smooth parallax (lerp factor 0.05 for desktop, 0.03 for mobile)
+    // Smooth parallax
     const lerpFactor = isMobile ? 0.03 : 0.05;
     parallaxX += (targetParallaxX - parallaxX) * lerpFactor;
     parallaxY += (targetParallaxY - parallaxY) * lerpFactor;
 
     drawStars(time);
     updateConstellationParallax();
+    animateMoon(time);
   }
   animate();
 
-  // --- Fetch weather (async) ---
+  // --- Fetch weather ---
   const weatherData = await fetchWeather(userLocation.lat, userLocation.lon);
 
-  // --- Build and log the VIGIL object ---
+  // --- Build VIGIL object ---
   const constellationData = primaryConstellation && CONSTELLATIONS[primaryConstellation]
-    ? {
-        primary: CONSTELLATIONS[primaryConstellation].name,
-        stars: CONSTELLATIONS[primaryConstellation].stars,
-        lines: CONSTELLATIONS[primaryConstellation].lines,
-      }
+    ? { primary: CONSTELLATIONS[primaryConstellation].name, stars: CONSTELLATIONS[primaryConstellation].stars, lines: CONSTELLATIONS[primaryConstellation].lines }
     : { primary: null, stars: [], lines: [] };
 
   window.VIGIL = {
-    location: {
-      lat: userLocation.lat,
-      lon: userLocation.lon,
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-    },
+    location: { lat: userLocation.lat, lon: userLocation.lon, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone },
     moon: moonData,
-    sun: {
-      sunrise: sunData.sunrise,
-      sunset: sunData.sunset,
-      solarNoon: sunData.solarNoon,
-      dayLength: sunData.dayLength,
-      dayLengthDelta: sunData.dayLengthDelta,
-    },
-    sabbat: {
-      current: sabbatData.current,
-      next: sabbatData.next,
-      nextName: sabbatData.nextName,
-      daysUntilNext: sabbatData.daysUntilNext,
-      nearSabbat: sabbatData.nearSabbat,
-    },
+    sun: { sunrise: sunData.sunrise, sunset: sunData.sunset, solarNoon: sunData.solarNoon, dayLength: sunData.dayLength, dayLengthDelta: sunData.dayLengthDelta },
+    sabbat: { current: sabbatData.current, next: sabbatData.next, nextName: sabbatData.nextName, daysUntilNext: sabbatData.daysUntilNext, nearSabbat: sabbatData.nearSabbat },
     weather: weatherData,
     constellation: constellationData,
     wheelOfYear: sabbatData.wheelOfYear,
