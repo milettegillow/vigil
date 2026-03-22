@@ -4,13 +4,12 @@
     <meta charset="UTF-8" />
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1.0, user-scalable=no"
+      content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover"
     />
     <meta name="mobile-web-app-capable" content="yes" />
-    <meta
-      name="apple-mobile-web-app-status-bar-style"
-      content="black-translucent"
-    />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <meta name="theme-color" content="#080010" />
     <link rel="icon" type="image/png" href="/vigil.png" />
     <link rel="apple-touch-icon" href="/vigil.png" />
     <title>Vigil</title>
@@ -40,8 +39,9 @@
         height: 100%;
         overflow: hidden;
         font-family: "Cormorant Garamond", Georgia, serif;
+        background-color: #080010;
         /* Layer 1: base deep sky gradient */
-        background: radial-gradient(
+        background-image: radial-gradient(
           ellipse at 50% 40%,
           #0a1628 0%,
           #060012 50%,
@@ -400,44 +400,23 @@
         cursor: pointer;
       }
 
-      /* --- Constellation tap target --- */
-      .constellation-tap {
-        pointer-events: all;
+      /* --- Constellation corner label --- */
+      #constellation-corner {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 120px;
+        height: 120px;
+        z-index: 7;
         cursor: pointer;
       }
 
-      /* --- Settings drawer --- */
-      #settings-backdrop {
-        position: fixed;
-        inset: 0;
-        z-index: 50;
-        background: transparent;
-        display: none;
-      }
-
-      #settings-backdrop.open {
-        display: block;
-      }
-
-      #settings-overlay {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        z-index: 52;
-        max-height: 60vh;
-        background: rgba(10, 10, 31, 0.92);
-        -webkit-backdrop-filter: blur(20px);
-        backdrop-filter: blur(20px);
-        border-radius: 20px 20px 0 0;
-        transform: translateY(100%);
-        transition: transform 400ms cubic-bezier(0.16, 1, 0.3, 1);
+      /* --- Settings tab view --- */
+      #view-settings {
+        flex-direction: column;
+        padding: 60px 32px 100px;
+        background: linear-gradient(to bottom, #080010, #0a1628);
         overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
-      }
-
-      #settings-overlay.open {
-        transform: translateY(0);
       }
 
       .settings-inner {
@@ -633,18 +612,207 @@
         opacity: 1;
       }
 
+      /* --- Tab views --- */
       .view {
         position: fixed;
         inset: 0;
         z-index: 6;
-        display: none;
+        display: flex;
         align-items: center;
         justify-content: center;
         pointer-events: none;
+        opacity: 0;
+        transition: opacity 300ms ease;
+        visibility: hidden;
       }
 
       .view.active {
+        opacity: 1;
+        pointer-events: auto;
+        visibility: visible;
+      }
+
+      /* --- Sun tab --- */
+      #view-day {
+        flex-direction: column;
+        padding: 60px 32px 100px;
+        overflow-y: auto;
+      }
+
+      .sun-icon { margin-bottom: 12px; }
+
+      .sun-date {
+        font-style: italic;
+        font-size: 13px;
+        color: #fffef0;
+        opacity: 0.5;
+        margin-bottom: 40px;
+      }
+
+      .sun-rows {
         display: flex;
+        flex-direction: column;
+        gap: 32px;
+        align-items: center;
+        margin-bottom: 40px;
+      }
+
+      .sun-row { text-align: center; }
+
+      .sun-row-label {
+        font-size: 11px;
+        color: #fffef0;
+        opacity: 0.4;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        margin-bottom: 4px;
+      }
+
+      .sun-row-value {
+        font-size: 28px;
+        color: #fffef0;
+        opacity: 0.9;
+      }
+
+      .sun-golden {
+        font-style: italic;
+        font-size: 13px;
+        color: #fffef0;
+        opacity: 0.4;
+      }
+
+      /* Atmospheric light scatter */
+      .sun-atmos {
+        position: absolute;
+        border-radius: 50%;
+        pointer-events: none;
+      }
+
+      /* --- Earth tab --- */
+      #view-nature {
+        flex-direction: column;
+        padding: 40px 20px 100px;
+        background: linear-gradient(to bottom, #050f08, #0a1f10);
+      }
+
+      .wheel-container {
+        position: relative;
+        width: 260px;
+        height: 260px;
+        margin: 0 auto 32px;
+      }
+
+      .wheel-svg { width: 260px; height: 260px; }
+
+      .wheel-sabbat-label {
+        font-family: 'Cormorant Garamond', Georgia, serif;
+        font-style: italic;
+        font-size: 11px;
+        fill: #fffef0;
+        fill-opacity: 0.5;
+        text-anchor: middle;
+        cursor: pointer;
+      }
+
+      .wheel-sabbat-label.current {
+        fill-opacity: 0.8;
+        font-size: 12px;
+      }
+
+      .wheel-tooltip {
+        position: absolute;
+        background: rgba(10, 10, 31, 0.92);
+        -webkit-backdrop-filter: blur(12px);
+        backdrop-filter: blur(12px);
+        border-radius: 12px;
+        padding: 14px 18px;
+        max-width: 220px;
+        z-index: 20;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 200ms ease;
+      }
+
+      .wheel-tooltip.visible {
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      .wheel-tooltip-name {
+        font-style: italic;
+        font-size: 15px;
+        color: #fffef0;
+        margin-bottom: 2px;
+      }
+
+      .wheel-tooltip-date {
+        font-size: 11px;
+        color: #fffef0;
+        opacity: 0.4;
+        margin-bottom: 6px;
+      }
+
+      .wheel-tooltip-text {
+        font-style: italic;
+        font-size: 13px;
+        color: #fffef0;
+        opacity: 0.7;
+        line-height: 1.5;
+      }
+
+      .earth-tree {
+        font-style: italic;
+        font-size: 13px;
+        color: #fffef0;
+        opacity: 0.6;
+        text-align: center;
+        margin-bottom: 6px;
+      }
+
+      .earth-nature {
+        font-size: 12px;
+        color: #fffef0;
+        opacity: 0.4;
+        text-align: center;
+        max-width: 280px;
+      }
+
+      /* --- Flame tab --- */
+      #view-today {
+        flex-direction: column;
+        padding: 0 40px;
+        transition: background 500ms ease, opacity 300ms ease;
+      }
+
+      .flame-icon {
+        margin-bottom: 40px;
+        opacity: 0.7;
+      }
+
+      .flame-text {
+        font-style: italic;
+        font-size: 22px;
+        color: #fffef0;
+        opacity: 0.9;
+        line-height: 1.6;
+        max-width: 75%;
+        text-align: center;
+        margin-bottom: 40px;
+      }
+
+      .flame-divider {
+        width: 40px;
+        height: 1px;
+        background: rgba(255, 254, 240, 0.2);
+        margin-bottom: 12px;
+      }
+
+      .flame-context {
+        font-style: italic;
+        font-size: 11px;
+        color: #fffef0;
+        opacity: 0.3;
+        text-align: center;
       }
     </style>
   </head>
@@ -672,6 +840,9 @@
     <!-- ==================== LAYER 4: CONSTELLATION SVG ==================== -->
     <svg id="constellation-layer" xmlns="http://www.w3.org/2000/svg"></svg>
 
+    <!-- ==================== LAYER 4.5: CONSTELLATION CORNER LABEL ==================== -->
+    <div id="constellation-corner"></div>
+
     <!-- ==================== LAYER 5: MOON (Three.js) ==================== -->
     <div id="moon-container">
       <canvas id="moon-three-canvas"></canvas>
@@ -686,62 +857,65 @@
     </div>
 
     <!-- ==================== SETTINGS OVERLAY ==================== -->
-    <div id="settings-backdrop"></div>
-    <div id="settings-overlay">
-      <div class="drawer-handle"></div>
+    <div class="settings-confirmation" id="settings-confirmation"></div>
+
+    <!-- ==================== TAB VIEWS ==================== -->
+    <div class="view" id="view-day">
+      <div class="sun-atmos" style="width:400px;height:400px;top:5%;left:60%;background:radial-gradient(circle,rgba(255,154,60,0.06),transparent 70%)"></div>
+      <div class="sun-atmos" style="width:500px;height:500px;top:10%;left:10%;background:radial-gradient(circle,rgba(255,217,125,0.05),transparent 70%)"></div>
+      <div class="sun-atmos" style="width:350px;height:350px;top:25%;left:40%;background:radial-gradient(circle,rgba(255,154,60,0.04),transparent 70%)"></div>
+      <div class="sun-atmos" style="width:100%;height:1px;top:50%;left:0;border-radius:0;background:linear-gradient(to right,transparent,rgba(255,254,240,0.02),transparent)"></div>
+      <svg class="sun-icon" width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="#fffef0" stroke-width="1.5" stroke-linecap="round"><circle cx="16" cy="16" r="6"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="16" y1="26" x2="16" y2="30"/><line x1="2" y1="16" x2="6" y2="16"/><line x1="26" y1="16" x2="30" y2="16"/><line x1="6.1" y1="6.1" x2="8.9" y2="8.9"/><line x1="23.1" y1="23.1" x2="25.9" y2="25.9"/><line x1="6.1" y1="25.9" x2="8.9" y2="23.1"/><line x1="23.1" y1="8.9" x2="25.9" y2="6.1"/></svg>
+      <div class="sun-date" id="sun-date"></div>
+      <div class="sun-rows" id="sun-rows"></div>
+      <div class="sun-golden" id="sun-golden"></div>
+    </div>
+
+    <div class="view" id="view-nature">
+      <div class="wheel-container">
+        <svg class="wheel-svg" id="wheel-svg" viewBox="0 0 260 260"></svg>
+        <div class="wheel-tooltip" id="wheel-tooltip">
+          <div class="wheel-tooltip-name" id="tooltip-name"></div>
+          <div class="wheel-tooltip-date" id="tooltip-date"></div>
+          <div class="wheel-tooltip-text" id="tooltip-text"></div>
+        </div>
+      </div>
+      <div class="earth-tree" id="earth-tree"></div>
+      <div class="earth-nature" id="earth-nature"></div>
+    </div>
+
+    <div class="view" id="view-today">
+      <div class="flame-icon" id="flame-icon"></div>
+      <div class="flame-text" id="flame-text"></div>
+      <div class="flame-divider"></div>
+      <div class="flame-context" id="flame-context"></div>
+    </div>
+
+    <div class="view" id="view-settings">
       <div class="settings-inner">
         <div class="settings-header">vigil</div>
-
         <div class="settings-section">
           <div class="settings-label">sound</div>
-          <input
-            type="range"
-            class="volume-slider"
-            id="volume-slider"
-            min="0"
-            max="1"
-            step="0.01"
-            value="0.25"
-          />
+          <input type="range" class="volume-slider" id="volume-slider" min="0" max="1" step="0.01" value="0.25" />
           <div class="settings-sound-name">crickets</div>
         </div>
-
         <div class="settings-section">
           <div class="settings-label">location</div>
           <div class="settings-coords" id="settings-coords"></div>
           <div class="settings-location-input-wrap">
-            <input
-              type="text"
-              class="settings-location-input"
-              id="location-input"
-              placeholder="enter a city or place..."
-              autocomplete="off"
-            />
-            <button
-              class="settings-submit-btn"
-              id="location-submit"
-              aria-label="Search"
-            >
-              →
-            </button>
+            <input type="text" class="settings-location-input" id="location-input" placeholder="enter a city or place..." autocomplete="off" />
+            <button class="settings-submit-btn" id="location-submit" aria-label="Search">→</button>
           </div>
           <div class="settings-location-note" id="location-note"></div>
           <button class="settings-gps-link" id="gps-link">· use my location</button>
         </div>
-
         <div class="settings-section settings-about">
-          <div class="settings-label" style="text-align: center">about</div>
-          <div class="settings-about-line1">
-            Vigil reads the sky where you are.
-          </div>
-          <div class="settings-about-line2">
-            Built on the spring equinox, 2026.
-          </div>
+          <div class="settings-label" style="text-align:center">about</div>
+          <div class="settings-about-line1">Vigil reads the sky where you are.</div>
+          <div class="settings-about-line2">Built on the spring equinox, 2026.</div>
         </div>
       </div>
     </div>
-
-    <div class="settings-confirmation" id="settings-confirmation"></div>
 
     <!-- ==================== TAB BAR ==================== -->
     <nav id="tab-bar">
@@ -751,13 +925,13 @@
       <div class="tab-icon" data-tab="day" onclick="switchTab('day')">
         <img src="sun.png" alt="Day" draggable="false" />
       </div>
-      <div class="tab-icon" data-tab="nature" onclick="switchTab('nature')">
-        <img src="sprig.png" alt="Nature" draggable="false" />
-      </div>
       <div class="tab-icon" data-tab="today" onclick="switchTab('today')">
-        <img src="flame.png" alt="Today" draggable="false" />
+        <img src="sprig.png" alt="Today" draggable="false" />
       </div>
-      <div class="tab-icon" id="settings-tab" onclick="toggleSettings()">
+      <div class="tab-icon" data-tab="nature" onclick="switchTab('nature')">
+        <img src="flame.png" alt="Nature" draggable="false" />
+      </div>
+      <div class="tab-icon" data-tab="settings" onclick="switchTab('settings')">
         <img src="compass.png" alt="Settings" draggable="false" />
       </div>
     </nav>
@@ -786,6 +960,7 @@
       const starSpriteCache = new Map();
       let constellationStarNames = new Set();
       let activeConstellationKeys = [];
+      let bestConstellationEntry = null;
       let moonScene,
         moonCamera,
         moonRenderer,
@@ -1434,153 +1609,69 @@
         },
       };
 
-      const CONSTELLATION_SCHEDULE = {
-        north: [
-          ["orion", "taurus", "gemini"],
-          ["orion", "taurus", "gemini"],
-          ["leo", "cancer", "gemini"],
-          ["leo", "cancer", "virgo"],
-          ["virgo", "leo", "bootes"],
-          ["virgo", "bootes", "scorpius"],
-          ["scorpius", "sagittarius", "lyra"],
-          ["sagittarius", "lyra", "aquila"],
-          ["pegasus", "aquila", "cygnus"],
-          ["pegasus", "cygnus", "andromeda"],
-          ["andromeda", "perseus", "aries"],
-          ["orion", "perseus", "taurus"],
-        ],
-        south: [
-          ["orion", "taurus", "gemini"],
-          ["orion", "gemini", "cancer"],
-          ["leo", "cancer", "virgo"],
-          ["leo", "virgo", "bootes"],
-          ["scorpius", "virgo", "bootes"],
-          ["scorpius", "sagittarius", "lyra"],
-          ["sagittarius", "scorpius", "aquila"],
-          ["sagittarius", "aquila", "lyra"],
-          ["pegasus", "aquila", "cygnus"],
-          ["pegasus", "andromeda", "cygnus"],
-          ["andromeda", "perseus", "aries"],
-          ["orion", "taurus", "perseus"],
-        ],
-      };
+      /* ==================== CONSTELLATION CATALOGUE (28 major) ==================== */
 
-      /* ==================== CONSTELLATION METADATA ==================== */
+      const CONSTELLATION_CATALOGUE = [
+        { key: 'aries', name: 'Aries', ra: 2.5, dec: 20, latinName: 'The Ram', brightestStar: 'Hamal (2.0)', bestMonths: [11,12,1], mythology: "The golden ram of Greek myth, sent to rescue two royal children. Only its fleece survived — hung in a sacred grove, it became the object of Jason and the Argonauts' great quest." },
+        { key: 'taurus', name: 'Taurus', ra: 4.7, dec: 15, latinName: 'The Bull', brightestStar: 'Aldebaran (0.85)', bestMonths: [12,1,2], mythology: 'Zeus took the form of a white bull to carry Europa across the sea. The Pleiades cluster on his shoulder — the seven sisters — were said to weep for him still.' },
+        { key: 'gemini', name: 'Gemini', ra: 7.0, dec: 22, latinName: 'The Twins', brightestStar: 'Pollux (1.14)', bestMonths: [1,2,3], mythology: 'Castor and Pollux, twin sons of Leda — one mortal, one divine. When Castor died, Pollux asked Zeus to share his immortality. They were placed together in the sky, inseparable.' },
+        { key: 'cancer', name: 'Cancer', ra: 8.6, dec: 20, latinName: 'The Crab', brightestStar: 'Al Tarf (3.5)', bestMonths: [2,3,4], mythology: 'A small, faint crab sent by Hera to distract Hercules during his battle with the Hydra. It was crushed underfoot — rewarded with a place in the sky for its loyalty regardless.' },
+        { key: 'leo', name: 'Leo', ra: 10.7, dec: 15, latinName: 'The Lion', brightestStar: 'Regulus (1.35)', bestMonths: [3,4,5], mythology: 'The lion reclines across the spring sky, head lifted, watching. The Babylonians saw him too — a great beast marking the summer solstice when the sun burned hottest. His heart-star Regulus means little king.' },
+        { key: 'virgo', name: 'Virgo', ra: 13.4, dec: -5, latinName: 'The Maiden', brightestStar: 'Spica (0.97)', bestMonths: [4,5,6], mythology: 'Demeter, goddess of the harvest, mourning her daughter Persephone taken to the underworld. When Virgo sets in autumn, the fields go cold. When she rises, things grow again.' },
+        { key: 'libra', name: 'Libra', ra: 15.2, dec: -15, latinName: 'The Scales', brightestStar: 'Zubenelgenubi (2.75)', bestMonths: [5,6,7], mythology: 'The only zodiac symbol that is an object, not a creature. The scales of Astraea, goddess of justice — once the claws of Scorpius next door, separated and elevated to weigh the souls of the dead.' },
+        { key: 'scorpius', name: 'Scorpius', ra: 16.9, dec: -30, latinName: 'The Scorpion', brightestStar: 'Antares (1.06)', bestMonths: [6,7,8], mythology: 'The creature that killed Orion — they were placed on opposite sides of the sky so they would never meet again. Antares, its red heart, rivals Mars in colour and has been mistaken for it for millennia.' },
+        { key: 'sagittarius', name: 'Sagittarius', ra: 19.1, dec: -25, latinName: 'The Archer', brightestStar: 'Kaus Australis (1.85)', bestMonths: [7,8,9], mythology: 'His arrow points toward the centre of the galaxy — the densest part of the Milky Way lies in his direction. To look at Sagittarius is to look into the heart of our own spiral arm.' },
+        { key: 'capricornus', name: 'Capricornus', ra: 21.0, dec: -18, latinName: 'The Sea Goat', brightestStar: 'Deneb Algedi (2.85)', bestMonths: [8,9,10], mythology: 'Half goat, half fish — the god Pan transformed to escape the monster Typhon, diving into the Nile mid-transformation. Zeus commemorated the confusion by placing him in the sky exactly as he was.' },
+        { key: 'aquarius', name: 'Aquarius', ra: 22.3, dec: -10, latinName: 'The Water Bearer', brightestStar: 'Sadalsuud (2.9)', bestMonths: [9,10,11], mythology: "Ganymede, the most beautiful of mortals, carried to Olympus by Zeus's eagle to serve as cupbearer to the gods. He pours the waters of knowledge endlessly downward." },
+        { key: 'pisces', name: 'Pisces', ra: 1.0, dec: 15, latinName: 'The Fish', brightestStar: 'Eta Piscium (3.62)', bestMonths: [10,11,12], mythology: 'Aphrodite and Eros transformed into fish and tied together with a cord to escape Typhon, swimming into the safety of the Euphrates. The cord between them has been visible ever since.' },
+        { key: 'orion', name: 'Orion', ra: 5.6, dec: 5, latinName: 'The Hunter', brightestStar: 'Rigel (0.13)', bestMonths: [12,1,2,3], mythology: 'He stands at the threshold of winter and spring, frozen mid-stride. The great Boeotian hunter, companion of Artemis, killed by a scorpion — placed on the opposite side of the sky from Scorpius so they never meet.' },
+        { key: 'ursamajor', name: 'Ursa Major', ra: 11.0, dec: 55, latinName: 'The Great Bear', brightestStar: 'Alioth (1.76)', bestMonths: [1,2,3,4,5,6], mythology: 'Callisto, transformed into a bear by the jealous Hera, wandered the forests for years. Her son nearly killed her hunting, not recognising her. Zeus swept them both into the sky before the spear could fall.' },
+        { key: 'ursaminor', name: 'Ursa Minor', ra: 15.0, dec: 75, latinName: 'The Little Bear', brightestStar: 'Polaris (1.97)', bestMonths: [1,2,3,4,5,6,7,8,9,10,11,12], mythology: 'Arcas, son of Callisto, placed beside his mother in the sky. His tail-tip star is Polaris — the fixed point around which all other stars appear to rotate. Sailors have trusted it for millennia.' },
+        { key: 'cassiopeia', name: 'Cassiopeia', ra: 1.0, dec: 60, latinName: 'The Queen', brightestStar: 'Schedar (2.24)', bestMonths: [9,10,11,12,1], mythology: 'The vain queen of Ethiopia, boasting her daughter was more beautiful than the sea-nymphs. Poseidon was not forgiving. She was placed in the sky to circle the pole forever — sometimes upside down, humiliated for eternity.' },
+        { key: 'perseus', name: 'Perseus', ra: 3.5, dec: 45, latinName: 'The Hero', brightestStar: 'Mirfak (1.79)', bestMonths: [11,12,1,2], mythology: "He holds the severed head of Medusa in his left hand — Algol, the Demon Star, marks her eye and dims every 2.87 days as her eyelid closes. Perseus rescued Andromeda from the sea monster and they stand together in the sky still." },
+        { key: 'andromeda', name: 'Andromeda', ra: 1.0, dec: 40, latinName: 'The Chained Princess', brightestStar: 'Alpheratz (2.07)', bestMonths: [10,11,12], mythology: 'Chained to a rock as sacrifice to the sea monster Cetus, rescued at the last moment by Perseus. Within her constellation lies the Andromeda Galaxy — the furthest thing visible to the naked eye, 2.5 million light years away.' },
+        { key: 'cygnus', name: 'Cygnus', ra: 20.6, dec: 44, latinName: 'The Swan', brightestStar: 'Deneb (1.25)', bestMonths: [7,8,9,10], mythology: "Zeus in one of his many disguises, or perhaps Orpheus transformed after death. The swan flies along the Milky Way, its great cross shape unmistakable. Deneb at its tail is one of the most luminous stars known — just very far away." },
+        { key: 'aquila', name: 'Aquila', ra: 19.7, dec: 5, latinName: 'The Eagle', brightestStar: 'Altair (0.76)', bestMonths: [7,8,9], mythology: "The eagle of Zeus, who carried Ganymede to Olympus and delivered the thunderbolts. Altair spins so fast it bulges visibly at its equator — a day there lasts nine hours." },
+        { key: 'lyra', name: 'Lyra', ra: 18.9, dec: 36, latinName: 'The Lyre', brightestStar: 'Vega (0.03)', bestMonths: [6,7,8,9], mythology: 'The lyre of Orpheus, whose music could move stones and calm wild beasts. After his death it was placed in the sky by the Muses. Vega was the pole star 12,000 years ago and will be again in 12,000 more.' },
+        { key: 'bootes', name: 'Boötes', ra: 14.7, dec: 30, latinName: 'The Herdsman', brightestStar: 'Arcturus (-0.05)', bestMonths: [4,5,6,7], mythology: 'The herdsman who drives the Great Bear around the pole, or perhaps the inventor of the plough. Arcturus, his brightest star, is the fourth brightest in the sky — an old orange giant near the end of its life.' },
+        { key: 'canismajor', name: 'Canis Major', ra: 6.8, dec: -22, latinName: 'The Great Dog', brightestStar: 'Sirius (-1.46)', bestMonths: [1,2,3], mythology: "One of Orion's hunting dogs, faithfully following his master across the sky. Sirius, the Dog Star, is the brightest star in the entire sky — the ancient Egyptians timed their calendar by its rising." },
+        { key: 'pegasus', name: 'Pegasus', ra: 22.7, dec: 20, latinName: 'The Winged Horse', brightestStar: 'Enif (2.4)', bestMonths: [9,10,11], mythology: "Born from the blood of Medusa when Perseus struck off her head, Pegasus flew to Olympus and served Zeus, carrying his thunderbolts. The Great Square of Pegasus is one of autumn's most recognisable signposts." },
+        { key: 'hercules', name: 'Hercules', ra: 17.4, dec: 28, latinName: 'The Hero', brightestStar: 'Kornephoros (2.77)', bestMonths: [6,7,8], mythology: 'The greatest of heroes, placed in the sky kneeling — some say in eternal penance for his twelve labours. Within his constellation lies M13, the Great Globular Cluster: 300,000 stars in a sphere, visible to the naked eye on a clear night.' },
+        { key: 'leominor', name: 'Leo Minor', ra: 10.2, dec: 35, latinName: 'The Little Lion', brightestStar: 'Praecipua (3.79)', bestMonths: [3,4,5], mythology: 'A small modern constellation placed between Leo and Ursa Major in the 17th century. Ancient skywatchers left this patch of sky unnamed — a quiet space between the great lion and the great bear.' },
+        { key: 'corvus', name: 'Corvus', ra: 12.4, dec: -18, latinName: 'The Crow', brightestStar: 'Gienah (2.59)', bestMonths: [4,5,6], mythology: "Apollo's sacred crow, sent to fetch water in a cup (Crater nearby). The crow returned late, blaming a water snake (Hydra). Apollo saw through the lie and flung all three into the sky as a warning — the crow can never reach the cup." },
+        { key: 'coronaborealis', name: 'Corona Borealis', ra: 15.8, dec: 33, latinName: 'The Northern Crown', brightestStar: 'Alphecca (2.23)', bestMonths: [5,6,7], mythology: 'The crown of Ariadne, given to her by Dionysus when she was abandoned by Theseus on Naxos. A perfect small arc of stars, one of the most beautiful small patterns in the sky.' },
+      ];
 
-      const CONSTELLATION_META = {
-        orion: {
-          latin: "The Hunter",
-          brightestStar: "Rigel (0.13)",
-          bestSeen: "9 PM, Jan–Mar",
-          description:
-            "He stands at the threshold of winter and spring, a hunter frozen mid-stride. The ancient Greeks saw in him the great Boeotian giant, and watched his belt rise as a signal that the cold was breaking.",
-        },
-        taurus: {
-          latin: "The Bull",
-          brightestStar: "Aldebaran (0.85)",
-          bestSeen: "9 PM, Dec–Feb",
-          description:
-            "The bull charges westward through the winter sky, its red eye Aldebaran burning low. Zeus took this form to carry Europa across the sea — or so the story goes. The Pleiades ride on its shoulder like old memories.",
-        },
-        gemini: {
-          latin: "The Twins",
-          brightestStar: "Pollux (1.14)",
-          bestSeen: "9 PM, Jan–Mar",
-          description:
-            "Castor and Pollux, the inseparable twins — one mortal, one divine. When Castor fell, Pollux begged Zeus to share his immortality. Now they stand together forever, shoulder to shoulder in the winter sky.",
-        },
-        leo: {
-          latin: "The Lion",
-          brightestStar: "Regulus (1.35)",
-          bestSeen: "9 PM, Mar–May",
-          description:
-            'The lion reclines across the spring sky, head lifted, watching. The Babylonians saw him too — a great beast marking the summer solstice when the sun burned hottest. His heart-star Regulus means "little king."',
-        },
-        cancer: {
-          latin: "The Crab",
-          brightestStar: "Al Tarf (3.5)",
-          bestSeen: "9 PM, Feb–Apr",
-          description:
-            "The faintest constellation of the zodiac, a small scattered cluster between the twins and the lion. Hera placed this crab in the sky for its bravery — it pinched Heracles during his battle with the Hydra and was crushed for it.",
-        },
-        virgo: {
-          latin: "The Maiden",
-          brightestStar: "Spica (0.97)",
-          bestSeen: "9 PM, Apr–Jun",
-          description:
-            "She holds a sheaf of wheat, Spica blazing in her hand. The maiden is Persephone, Demeter, Astraea — every culture saw a woman here, connected to harvest and the turning of the seasons.",
-        },
-        bootes: {
-          latin: "The Herdsman",
-          brightestStar: "Arcturus (−0.05)",
-          bestSeen: "9 PM, May–Jul",
-          description:
-            'The herdsman follows the Great Bear eternally around the pole. His star Arcturus — "bear-watcher" — is one of the brightest in all the sky, an orange giant 37 light-years away, older than our sun.',
-        },
-        scorpius: {
-          latin: "The Scorpion",
-          brightestStar: "Antares (0.96)",
-          bestSeen: "9 PM, Jun–Aug",
-          description:
-            'Low on the southern horizon, the scorpion drags its tail through the thickest part of the Milky Way. Antares pulses red at its heart — "rival of Mars" — a supergiant so vast it would swallow our sun whole.',
-        },
-        sagittarius: {
-          latin: "The Archer",
-          brightestStar: "Kaus Australis (1.85)",
-          bestSeen: "9 PM, Jul–Sep",
-          description:
-            "The archer aims toward the heart of the galaxy. When you look at Sagittarius you are looking toward the centre of the Milky Way — a supermassive black hole wrapped in 26,000 light-years of stars and dust.",
-        },
-        lyra: {
-          latin: "The Lyre",
-          brightestStar: "Vega (0.03)",
-          bestSeen: "9 PM, Jul–Sep",
-          description:
-            "Orpheus played this lyre so beautifully that rivers stopped flowing to listen. Vega, its brightest star, was the pole star 12,000 years ago and will be again — the sky turns on the longest of clocks.",
-        },
-        pegasus: {
-          latin: "The Winged Horse",
-          brightestStar: "Enif (2.39)",
-          bestSeen: "9 PM, Sep–Nov",
-          description:
-            "The Great Square of Pegasus opens like a window in the autumn sky. The winged horse sprang from the blood of Medusa — a creature born from violence that became a symbol of poetic inspiration.",
-        },
-        aquila: {
-          latin: "The Eagle",
-          brightestStar: "Altair (0.77)",
-          bestSeen: "9 PM, Jul–Oct",
-          description:
-            "The eagle soars along the Milky Way, Altair gleaming at its throat. In the Summer Triangle it forms with Vega and Deneb, Altair is the closest of the three — just 17 light-years from here.",
-        },
-        cygnus: {
-          latin: "The Swan",
-          brightestStar: "Deneb (1.25)",
-          bestSeen: "9 PM, Jul–Nov",
-          description:
-            "The swan flies south along the river of the Milky Way, wings spread wide. Deneb at its tail is one of the most luminous stars visible to the naked eye — 200,000 times brighter than the sun, impossibly far away.",
-        },
-        andromeda: {
-          latin: "The Chained Princess",
-          brightestStar: "Alpheratz (2.06)",
-          bestSeen: "9 PM, Sep–Dec",
-          description:
-            "Andromeda was chained to a rock by the sea, a sacrifice to the monster Cetus. Perseus rescued her, and the galaxy that bears her name is the most distant object you can see with your bare eyes — two million light-years.",
-        },
-        perseus: {
-          latin: "The Hero",
-          brightestStar: "Mirfak (1.79)",
-          bestSeen: "9 PM, Oct–Feb",
-          description:
-            'Perseus carries the severed head of Medusa through the northern sky. His star Algol — "the demon star" — winks every three days as its companion eclipses it, a phenomenon that frightened ancient astronomers.',
-        },
-        aries: {
-          latin: "The Ram",
-          brightestStar: "Hamal (2.00)",
-          bestSeen: "9 PM, Nov–Jan",
-          description:
-            "A small, ancient constellation — the ram whose golden fleece Jason sought. Two thousand years ago the sun crossed the equator here at the spring equinox. The age of Aries has passed, but the ram remains.",
-        },
-      };
+
+      /**
+       * Find the most prominent constellation above the horizon right now.
+       * Returns the catalogue entry, or null if none visible.
+       */
+      function findBestConstellation(lat, lon) {
+        const now = new Date();
+        const jd = toJD(now);
+        const lstDeg = lst(jd, lon);
+        const month = now.getMonth() + 1; // 1-12
+
+        let best = null;
+        let bestScore = -Infinity;
+
+        for (const c of CONSTELLATION_CATALOGUE) {
+          const { alt } = raDecToAltAz(c.ra, c.dec, lstDeg, lat);
+          if (alt < 5) continue; // below or too near horizon
+
+          // Score: altitude is primary, bonus for being in best months
+          let score = alt;
+          if (c.bestMonths.includes(month)) score += 15;
+
+          if (score > bestScore) {
+            bestScore = score;
+            best = c;
+          }
+        }
+        return best;
+      }
+
 
       /* ==================== MOON PHASE DESCRIPTIONS ==================== */
 
@@ -1930,9 +2021,29 @@
       const DEFAULT_LOCATION = { lat: 51.5074, lon: -0.1278 };
       let userLocation = DEFAULT_LOCATION;
 
+      function playAudioNow() {
+        // Must be called synchronously inside a user gesture — no awaits before this
+        if (audioStarted) return;
+        audioStarted = true;
+        ambientAudio.volume = 0;
+        ambientAudio.play().catch(() => { audioStarted = false; });
+        // Fade in over 3 seconds
+        const target = audioVolume > 0 ? audioVolume : 0.25;
+        const steps = 60;
+        const interval = 3000 / steps;
+        let step = 0;
+        const fade = setInterval(() => {
+          step++;
+          ambientAudio.volume = Math.min(target, target * (step / steps));
+          if (step >= steps) clearInterval(fade);
+        }, interval);
+      }
+
       function requestLocation() {
-        // Start audio NOW, synchronously inside the user gesture
-        startAmbientAudio();
+        // 1. Play audio FIRST — synchronously within the gesture
+        playAudioNow();
+        requestMotionPermission();
+        // 2. THEN do async geolocation
         if (!navigator.geolocation) {
           skipLocation(true);
           return;
@@ -1952,7 +2063,10 @@
       }
 
       function skipLocation(audioAlreadyStarted) {
-        if (!audioAlreadyStarted) startAmbientAudio();
+        if (!audioAlreadyStarted) {
+          playAudioNow();
+          requestMotionPermission();
+        }
         userLocation = DEFAULT_LOCATION;
         storeLocation(userLocation.lat, userLocation.lon);
         dismissOverlay();
@@ -1977,11 +2091,291 @@
       /* ==================== TAB SYSTEM ==================== */
 
       let activeTab = "sky";
+      const viewMap = { day: 'view-day', nature: 'view-nature', today: 'view-today', settings: 'view-settings' };
+      let tabsPopulated = { day: false, nature: false, today: false, settings: false };
+
       function switchTab(tabName) {
         activeTab = tabName;
         document.querySelectorAll(".tab-icon").forEach((el) => {
           el.classList.toggle("active", el.dataset.tab === tabName);
         });
+
+        // Show/hide sky layers
+        const skyLayers = ['sky-canvas', 'milkyway-canvas', 'atmosphere-overlay',
+          'constellation-layer', 'moon-container', 'moon-tap-target', 'constellation-corner'];
+        skyLayers.forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.style.display = tabName === 'sky' ? '' : 'none';
+        });
+
+        // Show/hide tab views
+        Object.entries(viewMap).forEach(([tab, viewId]) => {
+          const el = document.getElementById(viewId);
+          if (el) el.classList.toggle('active', tabName === tab);
+        });
+
+        // Populate on first open
+        if (tabName === 'day' && !tabsPopulated.day) { populateSunTab(); tabsPopulated.day = true; }
+        if (tabName === 'nature' && !tabsPopulated.nature) { populateEarthTab(); tabsPopulated.nature = true; }
+        if (tabName === 'today' && !tabsPopulated.today) { populateFlameTab(); tabsPopulated.today = true; }
+        if (tabName === 'settings' && !tabsPopulated.settings) { updateSettingsUI(); tabsPopulated.settings = true; }
+
+        // Set day tab background gradient based on time
+        if (tabName === 'day') updateDayBackground();
+        if (tabName === 'settings') updateSettingsUI();
+      }
+
+      /* ==================== SUN TAB ==================== */
+
+      function formatTime(d) {
+        if (!d) return '--:--';
+        return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+      }
+
+      function updateDayBackground() {
+        const el = document.getElementById('view-day');
+        const V = window.VIGIL;
+        if (!V || !V.sun) { el.style.background = 'linear-gradient(to bottom, #0a1628, #0d2545)'; return; }
+        const now = new Date();
+        const sr = V.sun.sunrise;
+        const ss = V.sun.sunset;
+        if (!sr || !ss) { el.style.background = 'linear-gradient(to bottom, #1a0a3d, #0d1b4b)'; return; }
+        const nowMin = now.getHours() * 60 + now.getMinutes();
+        const srMin = sr.getHours() * 60 + sr.getMinutes();
+        const ssMin = ss.getHours() * 60 + ss.getMinutes();
+        if (nowMin < srMin - 60 || nowMin > ssMin + 60) {
+          el.style.background = 'linear-gradient(to bottom, #1a0a3d, #0d1b4b)';
+        } else if (nowMin < srMin + 60 || nowMin > ssMin - 60) {
+          el.style.background = 'linear-gradient(to bottom, #2d1a00, #5c2d0a, #1a0a2e)';
+        } else {
+          el.style.background = 'linear-gradient(to bottom, #0a1628, #0d2545)';
+        }
+      }
+
+      function populateSunTab() {
+        const V = window.VIGIL;
+        if (!V) return;
+
+        const now = new Date();
+        const opts = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        document.getElementById('sun-date').textContent = now.toLocaleDateString('en-GB', opts);
+
+        const sunrise = V.sun.sunrise;
+        const sunset = V.sun.sunset;
+        const noon = V.sun.solarNoon;
+        const dayLen = V.sun.dayLength || '';
+        const delta = V.sun.dayLengthDelta || 0;
+        const deltaText = delta > 0 ? ` · days are growing longer` : delta < 0 ? ` · days are growing shorter` : '';
+
+        const rows = [
+          { label: 'sunrise', value: formatTime(sunrise) },
+          { label: 'solar noon', value: formatTime(noon) },
+          { label: 'sunset', value: formatTime(sunset) },
+          { label: 'day length', value: dayLen + deltaText },
+        ];
+
+        const container = document.getElementById('sun-rows');
+        container.innerHTML = rows.map(r =>
+          `<div class="sun-row"><div class="sun-row-label">${r.label}</div><div class="sun-row-value">${r.value}</div></div>`
+        ).join('');
+
+        // Golden hour
+        if (sunset) {
+          const golden = new Date(sunset.getTime() - 60 * 60 * 1000);
+          document.getElementById('sun-golden').textContent = `golden hour begins at ${formatTime(golden)}`;
+        }
+      }
+
+      /* ==================== EARTH TAB ==================== */
+
+      const WHEEL_POINTS = [
+        { name: 'Winter Solstice', angle: 0, date: 'around December 21', text: 'The longest night. The sun reaches its lowest point.', major: true },
+        { name: 'Midwinter Cross-Quarter', angle: 45, date: 'around February 1', text: 'Halfway between solstice and equinox. The first signs of returning light.', major: false },
+        { name: 'Spring Equinox', angle: 90, date: 'around March 21', text: 'Day and night in balance. Light overtakes dark.', major: true },
+        { name: 'Spring Cross-Quarter', angle: 135, date: 'around May 1', text: 'Peak of spring. Maximum growth and warmth building.', major: false },
+        { name: 'Summer Solstice', angle: 180, date: 'around June 21', text: 'The longest day. The sun at its highest arc.', major: true },
+        { name: 'Midsummer Cross-Quarter', angle: 225, date: 'around August 1', text: 'Halfway into summer\'s retreat. Harvest begins.', major: false },
+        { name: 'Autumn Equinox', angle: 270, date: 'around September 22', text: 'Balance again. Dark begins to overtake light.', major: true },
+        { name: 'Autumn Cross-Quarter', angle: 315, date: 'around October 31', text: 'The year turns inward. Nature prepares for rest.', major: false },
+      ];
+
+      const CELTIC_MONTHS = [
+        { tree: 'Rowan', nature: 'Redwings shelter in berry-heavy hedges.' },
+        { tree: 'Ash', nature: 'Snowdrops push through frozen ground.' },
+        { tree: 'Alder', nature: 'Frogs return to ponds. Blackbirds begin to sing.' },
+        { tree: 'Willow', nature: 'Swallows arrive. Bluebells carpet woodland floors.' },
+        { tree: 'Hawthorn', nature: 'Everything is flowering. Bees are everywhere.' },
+        { tree: 'Oak', nature: 'Longest light. Foxgloves and elderflower.' },
+        { tree: 'Holly', nature: 'High summer. Lavender and bumblebees.' },
+        { tree: 'Hazel', nature: 'Blackberries ripen. Harvest mice in the corn.' },
+        { tree: 'Vine', nature: 'Leaves begin to turn. Mushrooms in the morning.' },
+        { tree: 'Ivy', nature: 'Geese fly south. Hedgehogs fatten for sleep.' },
+        { tree: 'Reed', nature: 'Bare branches. Robins sing in the cold.' },
+        { tree: 'Elder', nature: 'Stillness. The land rests beneath the frost.' },
+      ];
+
+      function populateEarthTab() {
+        const V = window.VIGIL;
+        const wheelPos = V ? V.wheelOfYear || 0 : 0;
+        const cx = 130, cy = 130, r = 110;
+        const labelR = r + 24;
+        let svg = '';
+
+        // Outer circle
+        svg += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="rgba(255,254,240,0.2)" stroke-width="1"/>`;
+
+        // Find nearest two points to current position for brightness
+        const posAngleDeg = wheelPos * 360;
+        const nearestIndices = WHEEL_POINTS.map((p, i) => {
+          let diff = Math.abs(p.angle - posAngleDeg);
+          if (diff > 180) diff = 360 - diff;
+          return { i, diff };
+        }).sort((a, b) => a.diff - b.diff).slice(0, 2).map(x => x.i);
+
+        // Spokes, dots, labels
+        WHEEL_POINTS.forEach((s, i) => {
+          const a = (s.angle - 90) * Math.PI / 180;
+          const x1 = cx + Math.cos(a) * r;
+          const y1 = cy + Math.sin(a) * r;
+          const dotR = s.major ? 5 : 3;
+          const dotOp = s.major ? 0.7 : 0.4;
+          const isNear = nearestIndices.includes(i);
+          svg += `<line x1="${cx}" y1="${cy}" x2="${x1}" y2="${y1}" stroke="rgba(255,254,240,0.15)" stroke-width="1"/>`;
+          svg += `<circle cx="${x1}" cy="${y1}" r="${dotR}" fill="rgba(255,254,240,${dotOp})" data-wp="${i}" style="cursor:pointer"/>`;
+          const lx = cx + Math.cos(a) * labelR;
+          const ly = cy + Math.sin(a) * labelR;
+          svg += `<text x="${lx}" y="${ly + 4}" class="wheel-sabbat-label${isNear ? ' current' : ''}" data-wp="${i}">${s.name}</text>`;
+        });
+
+        // Current position glow dot
+        const posAngle = (wheelPos * 360 - 90) * Math.PI / 180;
+        const px = cx + Math.cos(posAngle) * r;
+        const py = cy + Math.sin(posAngle) * r;
+        svg += `<circle cx="${px}" cy="${py}" r="4" fill="#fffef0" opacity="0.9"/>`;
+        svg += `<circle cx="${px}" cy="${py}" r="8" fill="#fffef0" opacity="0.15"/>`;
+
+        document.getElementById('wheel-svg').innerHTML = svg;
+
+        // Celtic tree month
+        const month = new Date().getMonth();
+        const cm = CELTIC_MONTHS[month];
+        document.getElementById('earth-tree').textContent = `the ${cm.tree} month`;
+        document.getElementById('earth-nature').textContent = cm.nature;
+
+        // Wheel point tap handlers
+        document.getElementById('wheel-svg').addEventListener('click', (e) => {
+          const target = e.target.closest('[data-wp]');
+          if (!target) { hideWheelTooltip(); return; }
+          const idx = parseInt(target.getAttribute('data-wp'));
+          showWheelTooltip(idx, target);
+        });
+      }
+
+      function showWheelTooltip(idx, target) {
+        const s = WHEEL_POINTS[idx];
+        const tooltip = document.getElementById('wheel-tooltip');
+        document.getElementById('tooltip-name').textContent = s.name;
+        document.getElementById('tooltip-date').textContent = s.date;
+        document.getElementById('tooltip-text').textContent = s.text;
+
+        // Position near the clicked element
+        const rect = target.getBoundingClientRect();
+        const container = document.querySelector('.wheel-container').getBoundingClientRect();
+        let left = rect.left - container.left - 60;
+        let top = rect.top - container.top + 20;
+        left = Math.max(0, Math.min(left, 260 - 220));
+        top = Math.max(0, Math.min(top, 260 - 80));
+        tooltip.style.left = left + 'px';
+        tooltip.style.top = top + 'px';
+        tooltip.classList.add('visible');
+      }
+
+      function hideWheelTooltip() {
+        document.getElementById('wheel-tooltip').classList.remove('visible');
+      }
+
+      // Dismiss tooltip on tap outside wheel
+      document.addEventListener('click', (e) => {
+        if (!e.target.closest('.wheel-container')) hideWheelTooltip();
+      });
+
+      /* ==================== FLAME TAB ==================== */
+
+      const FLAME_ICONS = {
+        sky: '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#fffef0" stroke-width="1.2" stroke-linecap="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>',
+        earth: '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#fffef0" stroke-width="1.2" stroke-linecap="round"><path d="M6 21c3-3 5-6 5-10a5 5 0 0 1 10 0c0 6-4 10-9 10H6z"/><path d="M6 21c0-3 1-6 3-8"/></svg>',
+        fire: '<img src="flame.png" width="40" height="40" style="opacity:0.7" />',
+        water: '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#fffef0" stroke-width="1.2" stroke-linecap="round"><path d="M12 2c-4 6-7 9-7 13a7 7 0 0 0 14 0c0-4-3-7-7-13z"/></svg>',
+        outdoor: '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#fffef0" stroke-width="1.2" stroke-linecap="round"><path d="M6 21c3-3 5-6 5-10a5 5 0 0 1 10 0c0 6-4 10-9 10H6z"/><path d="M6 21c0-3 1-6 3-8"/></svg>',
+      };
+
+      const FLAME_BG = {
+        sky: '#080010', earth: '#050f08', fire: '#120800', water: '#020d10', outdoor: '#050f08',
+      };
+
+      const FLAME_SUGGESTIONS = {
+        'New Moon': { text: "Go somewhere with less light than usual tonight — the bottom of the garden, an open window, anywhere a little darker. Let your eyes adjust. The sky has more in it than you think.", type: 'sky' },
+        'Waxing Crescent': { text: 'Find soil you can touch. Press both palms flat against it and hold them there for three full breaths. The ground is warmer than it was a month ago. Notice that.', type: 'earth' },
+        'First Quarter': { text: "Take a walk on a route you don't normally take, even just a different street. Don't plan it. Let yourself go slightly wrong and notice what you find.", type: 'outdoor' },
+        'Waxing Gibbous': { text: "Light something — a candle, the hob, a fire if you have one. Watch the flame for longer than feels comfortable. You don't have to think anything in particular.", type: 'fire' },
+        'Full Moon': { text: 'Go outside and find the moon. Give it two full minutes — longer than feels natural. Notice what it does to the colour of everything around you.', type: 'sky' },
+        'Waning Gibbous': { text: "Pick up something from outside — a stone, a fallen leaf, a seed head. Hold it in your palm for a moment. Then put it somewhere you'll see it tomorrow.", type: 'earth' },
+        'Last Quarter': { text: "Go outside and face west as the sun goes down, or as close to it as you can manage. Stay until the colour is completely gone. This takes longer than you expect.", type: 'sky' },
+        'Waning Crescent': { text: 'Have a bath or a long shower tonight. Let the water be slightly warmer than you usually would. This is the end of a cycle and your body probably knows it.', type: 'water' },
+      };
+
+      const NEAR_SABBAT_SUGGESTIONS = {
+        'Spring Equinox': { text: "Find something that has recently opened — a bud, a new leaf, a flower just cracking. You don't need to do anything with it. Witness it. That is enough.", type: 'earth' },
+        'Summer Solstice': { text: 'Go outside at the very end of the day and watch the last light go. Tonight the sun sets later than almost any other night this year.', type: 'sky' },
+        'Autumn Equinox': { text: "Go outside and pick up a fallen leaf. Look at it properly — the structure, the colour, where it's gone transparent. It took all summer to make this.", type: 'outdoor' },
+        'Winter Solstice': { text: 'Light every candle you own tonight if you can. The dark is at its deepest and the light you make matters more than it does at any other time of year.', type: 'fire' },
+        'Spring Cross-Quarter': { text: 'Take your shoes off on grass or soil if the temperature allows it. Even thirty seconds. The ground is genuinely warmer than it was six weeks ago.', type: 'earth' },
+        'Autumn Cross-Quarter': { text: 'Go outside after dark and just stand still for two minutes. Notice how the quality of the dark is different now to summer. The year is turning inward and so can you.', type: 'outdoor' },
+      };
+
+      const FALLBACK_SUGGESTION = { text: 'Go outside tonight, even briefly. Look up before you look at your phone. Give the sky thirty seconds before anything else gets your attention.', type: 'sky' };
+
+      function populateFlameTab() {
+        const V = window.VIGIL;
+        if (!V) return;
+
+        let suggestion, type, contextParts = [];
+
+        const weatherCode = V.weather && V.weather.weatherCode;
+        const isRainy = weatherCode && (weatherCode >= 51 && weatherCode <= 67 || weatherCode >= 80 && weatherCode <= 82);
+
+        if (V.sabbat.nearSabbat && NEAR_SABBAT_SUGGESTIONS[V.sabbat.nearSabbat]) {
+          const s = NEAR_SABBAT_SUGGESTIONS[V.sabbat.nearSabbat];
+          suggestion = s.text;
+          type = s.type;
+          contextParts.push('near ' + V.sabbat.nearSabbat.toLowerCase());
+        } else if (isRainy) {
+          suggestion = 'Go outside for sixty seconds without sheltering. Feel the rain on your face and hands. Everything growing right now is feeling exactly this.';
+          type = 'water';
+          contextParts.push('rain');
+        } else {
+          const phase = V.moon.phaseName || 'Waxing Crescent';
+          const s = FLAME_SUGGESTIONS[phase] || FALLBACK_SUGGESTION;
+          suggestion = s.text;
+          type = s.type;
+          contextParts.push(phase.toLowerCase());
+        }
+
+        const month = new Date().getMonth();
+        const seasons = ['winter','winter','spring','spring','spring','summer','summer','summer','autumn','autumn','autumn','winter'];
+        contextParts.push(seasons[month]);
+        const hour = new Date().getHours();
+        if (hour >= 5 && hour < 12) contextParts.push('morning');
+        else if (hour >= 12 && hour < 17) contextParts.push('afternoon');
+        else if (hour >= 17 && hour < 21) contextParts.push('evening');
+        else contextParts.push('night');
+
+        document.getElementById('flame-icon').innerHTML = FLAME_ICONS[type] || FLAME_ICONS.sky;
+        document.getElementById('flame-text').textContent = suggestion;
+        document.getElementById('flame-context').textContent = contextParts.join(' · ');
+
+        const el = document.getElementById('view-today');
+        el.style.background = FLAME_BG[type] || FLAME_BG.sky;
       }
 
       /* ==================== AMBIENT AUDIO ==================== */
@@ -1994,37 +2388,14 @@
       );
       let audioStarted = false;
 
-      function startAmbientAudio() {
-        if (audioStarted) return;
-        if (audioVolume <= 0) return;
-        audioStarted = true;
-        ambientAudio
-          .play()
-          .then(() => {
-            const target = audioVolume;
-            const steps = 60;
-            const interval = 3000 / steps;
-            let step = 0;
-            const fade = setInterval(() => {
-              step++;
-              ambientAudio.volume = Math.min(target, target * (step / steps));
-              if (step >= steps) clearInterval(fade);
-            }, interval);
-          })
-          .catch(() => {
-            audioStarted = false;
-          });
-      }
-
       function setVolume(val) {
         audioVolume = val;
         localStorage.setItem("vigil_volume", val);
         if (val > 0) {
-          if (!audioStarted) {
-            startAmbientAudio();
-          } else {
+          if (audioStarted) {
             ambientAudio.volume = val;
           }
+          // If not started yet, volume will be applied when playAudioNow runs
         } else {
           ambientAudio.volume = 0;
           if (audioStarted) {
@@ -2034,21 +2405,20 @@
         }
       }
 
-      // For returning users (overlay skipped), start audio on first tap anywhere
+      // For returning users (overlay skipped), start audio on very first tap
       if (getStoredLocation()) {
-        function onFirstTap() {
-          document.removeEventListener('click', onFirstTap);
-          document.removeEventListener('touchstart', onFirstTap);
-          startAmbientAudio();
-        }
-        document.addEventListener('click', onFirstTap);
-        document.addEventListener('touchstart', onFirstTap);
+        const startAudioOnFirstTap = () => {
+          document.removeEventListener('touchstart', startAudioOnFirstTap);
+          document.removeEventListener('click', startAudioOnFirstTap);
+          playAudioNow();
+          requestMotionPermission();
+        };
+        document.addEventListener('touchstart', startAudioOnFirstTap);
+        document.addEventListener('click', startAudioOnFirstTap);
       }
 
       /* ==================== SETTINGS OVERLAY ==================== */
 
-      let settingsOpen = false;
-      let settingsTouchStartY = 0;
 
       function formatCoords(lat, lon) {
         const latDir = lat >= 0 ? "N" : "S";
@@ -2084,57 +2454,11 @@
         slider.style.background = `linear-gradient(to right, rgba(255,254,240,0.6) ${pct}%, rgba(255,254,240,0.2) ${pct}%)`;
       }
 
-      function toggleSettings() {
-        if (settingsOpen) {
-          closeSettings();
-        } else {
-          openSettings();
-        }
-      }
-
-      function openSettings() {
-        updateSettingsUI();
-        document.getElementById("settings-overlay").classList.add("open");
-        document.getElementById("settings-backdrop").classList.add("open");
-        settingsOpen = true;
-      }
-
-      function closeSettings() {
-        document.getElementById("settings-overlay").classList.remove("open");
-        document.getElementById("settings-backdrop").classList.remove("open");
-        settingsOpen = false;
-      }
-
-      // Tap backdrop to close settings
-      document
-        .getElementById("settings-backdrop")
-        .addEventListener("click", closeSettings);
-
       // Volume slider
-      document
-        .getElementById("volume-slider")
-        .addEventListener("input", (e) => {
-          setVolume(parseFloat(e.target.value));
-          updateSliderFill();
-        });
-
-      // Settings swipe-to-close
-      document.getElementById("settings-overlay").addEventListener(
-        "touchstart",
-        (e) => {
-          settingsTouchStartY = e.touches[0].clientY;
-        },
-        { passive: true },
-      );
-
-      document.getElementById("settings-overlay").addEventListener(
-        "touchmove",
-        (e) => {
-          const dy = e.touches[0].clientY - settingsTouchStartY;
-          if (dy > 80) closeSettings();
-        },
-        { passive: true },
-      );
+      document.getElementById("volume-slider").addEventListener("input", (e) => {
+        setVolume(parseFloat(e.target.value));
+        updateSliderFill();
+      });
 
       // Location search
       async function searchLocation(query) {
@@ -2148,48 +2472,32 @@
             userLocation = { lat: place.latitude, lon: place.longitude };
             storeLocation(place.latitude, place.longitude);
             localStorage.setItem("vigil_manual_location", "true");
-            closeSettings();
+            switchTab('sky');
             refreshSceneData();
             showConfirmation(place.name);
           }
-        } catch (e) {
-          // silently fail
-        }
+        } catch (e) {}
       }
 
-      document
-        .getElementById("location-submit")
-        .addEventListener("click", () => {
-          searchLocation(document.getElementById("location-input").value);
-        });
+      document.getElementById("location-submit").addEventListener("click", () => {
+        searchLocation(document.getElementById("location-input").value);
+      });
 
-      document
-        .getElementById("location-input")
-        .addEventListener("keydown", (e) => {
-          if (e.key === "Enter") {
-            e.preventDefault();
-            searchLocation(e.target.value);
-          }
-        });
+      document.getElementById("location-input").addEventListener("keydown", (e) => {
+        if (e.key === "Enter") { e.preventDefault(); searchLocation(e.target.value); }
+      });
 
       // GPS re-trigger
       document.getElementById("gps-link").addEventListener("click", () => {
         if (!navigator.geolocation) return;
-        navigator.geolocation.getCurrentPosition(
-          (pos) => {
-            userLocation = {
-              lat: pos.coords.latitude,
-              lon: pos.coords.longitude,
-            };
-            storeLocation(userLocation.lat, userLocation.lon);
-            localStorage.removeItem("vigil_manual_location");
-            closeSettings();
-            refreshSceneData();
-            showConfirmation("your location");
-          },
-          () => {},
-          { timeout: 10000 },
-        );
+        navigator.geolocation.getCurrentPosition((pos) => {
+          userLocation = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+          storeLocation(userLocation.lat, userLocation.lon);
+          localStorage.removeItem("vigil_manual_location");
+          switchTab('sky');
+          refreshSceneData();
+          showConfirmation("your location");
+        }, () => {}, { timeout: 10000 });
       });
 
       function showConfirmation(text) {
@@ -2357,42 +2665,33 @@
       }
 
       /* --- Constellation drawer --- */
-      function openConstellationDrawer(key) {
-        const c = CONSTELLATIONS[key];
-        const m = CONSTELLATION_META[key];
-        if (!c || !m) return;
+      function openConstellationDrawer() {
+        const entry = bestConstellationEntry;
+        if (!entry) return;
 
         const now = new Date();
         const jd = toJD(now);
         const lstDeg = lst(jd, userLocation.lon);
-        // Check if constellation centre is above horizon
-        let sumAlt = 0,
-          count = 0;
-        for (const s of c.stars) {
-          const { alt } = raDecToAltAz(s.ra, s.dec, lstDeg, userLocation.lat);
-          sumAlt += alt;
-          count++;
-        }
-        const avgAlt = count > 0 ? sumAlt / count : 0;
-        const horizonNote =
-          avgAlt > 30
-            ? "High above the horizon"
-            : avgAlt > 10
-              ? "Above the horizon"
-              : "Near the horizon";
+        const { alt } = raDecToAltAz(entry.ra, entry.dec, lstDeg, userLocation.lat);
+        const horizonNote = alt > 30 ? 'High above the horizon'
+                          : alt > 10 ? 'Above the horizon'
+                          : 'Near the horizon';
+
+        const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        const bestSeen = entry.bestMonths.map(m => monthNames[m - 1]).join('–');
 
         const html = `
-          <div class="drawer-title">${c.name}</div>
-          <div class="drawer-subtitle">${m.latin}</div>
-          <div class="drawer-description">${m.description}</div>
+          <div class="drawer-title">${entry.name}</div>
+          <div class="drawer-subtitle">${entry.latinName}</div>
+          <div class="drawer-description">${entry.mythology}</div>
           <div class="drawer-divider"></div>
           <div class="drawer-stats">
             <div class="drawer-stat">
-              <div class="drawer-stat-value">${m.bestSeen}</div>
+              <div class="drawer-stat-value">${bestSeen}</div>
               <div class="drawer-stat-label">best visible</div>
             </div>
             <div class="drawer-stat">
-              <div class="drawer-stat-value">${m.brightestStar}</div>
+              <div class="drawer-stat-value">${entry.brightestStar}</div>
               <div class="drawer-stat-label">brightest star</div>
             </div>
           </div>
@@ -2416,6 +2715,12 @@
           e.stopPropagation();
           openMoonDrawer();
         });
+
+      // Constellation corner tap
+      document.getElementById('constellation-corner').addEventListener('click', (e) => {
+        e.stopPropagation();
+        openConstellationDrawer();
+      });
 
       /* ==================== MILKY WAY (Layer 2 — drawn once) ==================== */
 
@@ -2748,9 +3053,9 @@
           skyCtx.fill();
         }
 
-        const maxNear = isMobile ? 15 : 8;
-        const maxMid = isMobile ? 8 : 4;
-        const maxFar = isMobile ? 4 : 2;
+        const maxNear = isMobile ? 30 : 8;
+        const maxMid = isMobile ? 16 : 4;
+        const maxFar = isMobile ? 8 : 2;
 
         for (const star of starScreenPositions) {
           let pxOffset;
@@ -2789,15 +3094,19 @@
       /* ==================== CONSTELLATION RENDERER ==================== */
 
       function selectConstellations() {
-        const month = new Date().getMonth();
-        const hemi = userLocation.lat >= 0 ? "north" : "south";
-        const keys = CONSTELLATION_SCHEDULE[hemi][month];
-        activeConstellationKeys = keys.filter((k) => CONSTELLATIONS[k]);
+        // Use real-time visibility calculation
+        bestConstellationEntry = findBestConstellation(userLocation.lat, userLocation.lon);
 
+        // Still populate activeConstellationKeys for the SVG line drawing
         constellationStarNames.clear();
-        for (const key of activeConstellationKeys) {
-          for (const s of CONSTELLATIONS[key].stars) {
-            constellationStarNames.add(s.n);
+        activeConstellationKeys = [];
+        if (bestConstellationEntry) {
+          const key = bestConstellationEntry.key;
+          if (CONSTELLATIONS[key]) {
+            activeConstellationKeys = [key];
+            for (const s of CONSTELLATIONS[key].stars) {
+              constellationStarNames.add(s.n);
+            }
           }
         }
         return activeConstellationKeys;
@@ -2870,24 +3179,9 @@
           count++;
         });
 
-        // Constellation name label below the centre with tap target
-        if (count > 0) {
-          const labelX = sumX / count;
-          const labelY = sumY / count + 30;
-          svgContent += `<rect x="${labelX - 60}" y="${labelY - 30}" width="120" height="60" fill="transparent" style="pointer-events:all;cursor:pointer" data-key="${primaryKey}" class="constellation-tap" />`;
-          svgContent += `<text class="constellation-label" x="${labelX}" y="${labelY}" style="pointer-events:none">${constellation.name}</text>`;
-        }
-
         svg.innerHTML = svgContent;
 
-        // Bind constellation tap handler
-        const tapTarget = svg.querySelector(".constellation-tap");
-        if (tapTarget) {
-          tapTarget.addEventListener("click", (e) => {
-            e.stopPropagation();
-            openConstellationDrawer(tapTarget.getAttribute("data-key"));
-          });
-        }
+        // Update fixed corner label
 
         return primaryKey;
       }
@@ -2895,7 +3189,7 @@
       function updateConstellationParallax() {
         const svg = document.getElementById("constellation-layer");
         if (!svg) return;
-        const maxOffset = isMobile ? 8 : 4;
+        const maxOffset = isMobile ? 16 : 4;
         svg.style.transform = `translate(${parallaxX * maxOffset}px, ${-parallaxY * maxOffset}px)`;
       }
 
@@ -3031,39 +3325,67 @@
 
         if (window.DeviceOrientationEvent) {
           if (typeof DeviceOrientationEvent.requestPermission === "function") {
-            document.addEventListener(
-              "click",
-              function reqPerm() {
-                DeviceOrientationEvent.requestPermission()
-                  .then((state) => {
-                    if (state === "granted")
-                      window.addEventListener(
-                        "deviceorientation",
-                        onDeviceOrientation,
-                      );
-                  })
-                  .catch(() => {});
-                document.removeEventListener("click", reqPerm);
-              },
-              { once: false },
-            );
+            // iOS: if previously granted, just add listener
+            if (localStorage.getItem('vigil_motion') === 'granted') {
+              window.addEventListener("deviceorientation", onDeviceOrientation);
+            }
+            // Otherwise, requestMotionPermission() will be called on first tap
           } else {
+            // Non-iOS: add gyroscope listener directly
             window.addEventListener("deviceorientation", onDeviceOrientation);
           }
         }
         window.addEventListener("mousemove", onMouseMove);
       }
 
+      // Request iOS gyroscope permission — must be called inside a click handler
+      let motionPermissionRequested = false;
+      function requestMotionPermission() {
+        if (motionPermissionRequested) return;
+        if (typeof DeviceOrientationEvent === 'undefined') return;
+        if (typeof DeviceOrientationEvent.requestPermission !== "function") return;
+        motionPermissionRequested = true;
+        DeviceOrientationEvent.requestPermission()
+          .then((state) => {
+            if (state === "granted") {
+              localStorage.setItem('vigil_motion', 'granted');
+              window.addEventListener("deviceorientation", onDeviceOrientation);
+            }
+          })
+          .catch(() => { motionPermissionRequested = false; });
+      }
+
       function onDeviceOrientation(e) {
         if (e.gamma === null || e.beta === null) return;
-        targetParallaxX = clamp(e.gamma / 45, -1, 1);
-        targetParallaxY = clamp((e.beta - 45) / 45, -1, 1);
+        // gamma = left/right tilt, beta = forward/back tilt
+        // ±15° maps to full range for responsive feel
+        targetParallaxX = clamp(e.gamma / 15, -1, 1);
+        targetParallaxY = clamp((e.beta - 45) / 15, -1, 1);
       }
 
       function onMouseMove(e) {
         targetParallaxX = (e.clientX / window.innerWidth - 0.5) * 2;
         targetParallaxY = (e.clientY / window.innerHeight - 0.5) * 2;
       }
+
+      // Touch drag fallback — works even without gyroscope permission
+      let touchStartX = 0, touchStartY = 0;
+      let touchParallaxX = 0, touchParallaxY = 0;
+      document.addEventListener('touchstart', (e) => {
+        if (e.target.closest('#tab-bar, #info-drawer, #view-settings, #location-overlay')) return;
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+        touchParallaxX = targetParallaxX;
+        touchParallaxY = targetParallaxY;
+      }, { passive: true });
+
+      document.addEventListener('touchmove', (e) => {
+        if (e.target.closest('#tab-bar, #info-drawer, #view-settings, #location-overlay')) return;
+        const dx = (e.touches[0].clientX - touchStartX) / window.innerWidth * 4;
+        const dy = (e.touches[0].clientY - touchStartY) / window.innerHeight * 4;
+        targetParallaxX = clamp(touchParallaxX + dx, -1, 1);
+        targetParallaxY = clamp(touchParallaxY - dy, -1, 1);
+      }, { passive: true });
 
       /* ==================== MAIN INIT & ANIMATION LOOP ==================== */
 
@@ -3123,7 +3445,7 @@
           const time = performance.now() * 0.001;
 
           // Smooth parallax
-          const lerpFactor = isMobile ? 0.03 : 0.05;
+          const lerpFactor = isMobile ? 0.08 : 0.05;
           parallaxX += (targetParallaxX - parallaxX) * lerpFactor;
           parallaxY += (targetParallaxY - parallaxY) * lerpFactor;
 
@@ -3140,14 +3462,9 @@
         );
 
         // --- Build VIGIL object ---
-        const constellationData =
-          primaryConstellation && CONSTELLATIONS[primaryConstellation]
-            ? {
-                primary: CONSTELLATIONS[primaryConstellation].name,
-                stars: CONSTELLATIONS[primaryConstellation].stars,
-                lines: CONSTELLATIONS[primaryConstellation].lines,
-              }
-            : { primary: null, stars: [], lines: [] };
+        const constellationData = bestConstellationEntry
+            ? { primary: bestConstellationEntry.name, key: bestConstellationEntry.key }
+            : { primary: null, key: null };
 
         window.VIGIL = {
           location: {
