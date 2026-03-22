@@ -193,19 +193,38 @@
         display: block;
       }
 
-      /* --- Tab Navigation --- */
+      /* --- Tab Navigation — liquid glass pill --- */
       #tab-bar {
         position: fixed;
-        bottom: 0;
-        left: 0;
-        right: 0;
+        bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+        left: 50%;
+        transform: translateX(-50%);
+        width: 85%;
+        max-width: 420px;
         z-index: 10;
         display: flex;
         align-items: center;
         justify-content: space-around;
-        height: 60px;
-        padding-bottom: env(safe-area-inset-bottom, 0);
-        border-top: 0.5px solid rgba(255, 255, 255, 0.15);
+        height: 56px;
+        border-radius: 40px;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        -webkit-backdrop-filter: blur(24px) saturate(180%);
+        backdrop-filter: blur(24px) saturate(180%);
+        box-shadow:
+          0 8px 32px rgba(0, 0, 0, 0.4),
+          0 1px 0 rgba(255, 255, 255, 0.05) inset;
+      }
+
+      #tab-bar::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 20px;
+        right: 20px;
+        height: 1px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 1px;
       }
 
       .tab-icon {
@@ -215,27 +234,389 @@
         width: 44px;
         height: 44px;
         cursor: pointer;
-        transition:
-          opacity 0.3s,
-          transform 0.3s;
+        transition: opacity 0.3s, transform 0.3s;
       }
 
-      .tab-icon svg {
-        width: 22px;
-        height: 22px;
-        fill: none;
-        stroke: #8090a8;
-        stroke-width: 1.5;
-        stroke-linecap: round;
-        stroke-linejoin: round;
-        opacity: 0.4;
-        transition: all 0.3s ease;
+      .tab-icon img {
+        width: 24px;
+        height: 24px;
+        opacity: 0.35;
+        transform: scale(1.0);
+        transition: opacity 200ms ease, transform 200ms ease;
       }
 
-      .tab-icon.active svg {
-        stroke: #fffef0;
+      .tab-icon.active img {
         opacity: 1;
-        transform: scale(1.15);
+        transform: scale(1.1);
+      }
+
+      /* --- Drawer --- */
+      #drawer-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 50;
+        background: transparent;
+        display: none;
+      }
+
+      #drawer-backdrop.open { display: block; }
+
+      #info-drawer {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 51;
+        height: auto;
+        max-height: 55vh;
+        background: rgba(10, 10, 31, 0.92);
+        -webkit-backdrop-filter: blur(20px);
+        backdrop-filter: blur(20px);
+        border-radius: 20px 20px 0 0;
+        transform: translateY(100%);
+        transition: transform 400ms cubic-bezier(0.16, 1, 0.3, 1);
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      #info-drawer.open {
+        transform: translateY(0);
+      }
+
+      .drawer-handle {
+        width: 30px;
+        height: 3px;
+        background: rgba(255, 254, 240, 0.3);
+        border-radius: 3px;
+        margin: 12px auto 0;
+      }
+
+      .drawer-body {
+        padding: 28px 32px 40px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+      }
+
+      .drawer-phase-icon {
+        width: 72px;
+        height: 72px;
+        margin-bottom: 16px;
+      }
+
+      .drawer-title {
+        font-size: 38px;
+        font-style: italic;
+        font-weight: 300;
+        color: #fffef0;
+        margin-bottom: 8px;
+      }
+
+      .drawer-subtitle {
+        font-size: 14px;
+        font-weight: 300;
+        color: #fffef0;
+        opacity: 0.6;
+        margin-bottom: 6px;
+      }
+
+      .drawer-poem {
+        font-size: 17px;
+        font-style: italic;
+        font-weight: 300;
+        color: #fffef0;
+        opacity: 0.7;
+        line-height: 1.6;
+        max-width: 300px;
+        margin-bottom: 24px;
+      }
+
+      .drawer-divider {
+        width: 60px;
+        height: 1px;
+        background: rgba(255, 254, 240, 0.2);
+        margin-bottom: 24px;
+      }
+
+      .drawer-stats {
+        display: flex;
+        gap: 28px;
+        margin-bottom: 16px;
+      }
+
+      .drawer-stat {
+        text-align: center;
+      }
+
+      .drawer-stat-value {
+        font-size: 20px;
+        font-weight: 400;
+        color: #fffef0;
+      }
+
+      .drawer-stat-label {
+        font-size: 12px;
+        font-weight: 300;
+        color: #fffef0;
+        opacity: 0.45;
+        margin-top: 2px;
+      }
+
+      .drawer-footnote {
+        font-size: 11px;
+        font-style: italic;
+        font-weight: 300;
+        color: #fffef0;
+        opacity: 0.4;
+        max-width: 260px;
+        line-height: 1.5;
+      }
+
+      .drawer-description {
+        font-size: 14px;
+        font-weight: 300;
+        color: #fffef0;
+        opacity: 0.65;
+        line-height: 1.7;
+        max-width: 320px;
+        margin-bottom: 24px;
+      }
+
+      /* --- Moon tap target --- */
+      #moon-tap-target {
+        position: fixed;
+        z-index: 6;
+        left: 50%;
+        top: 40%;
+        transform: translate(-50%, -50%);
+        border-radius: 50%;
+        cursor: pointer;
+      }
+
+      /* --- Constellation tap target --- */
+      .constellation-tap {
+        pointer-events: all;
+        cursor: pointer;
+      }
+
+      /* --- Settings drawer --- */
+      #settings-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 50;
+        background: transparent;
+        display: none;
+      }
+
+      #settings-backdrop.open { display: block; }
+
+      #settings-overlay {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 52;
+        max-height: 60vh;
+        background: rgba(10, 10, 31, 0.92);
+        -webkit-backdrop-filter: blur(20px);
+        backdrop-filter: blur(20px);
+        border-radius: 20px 20px 0 0;
+        transform: translateY(100%);
+        transition: transform 400ms cubic-bezier(0.16, 1, 0.3, 1);
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      #settings-overlay.open {
+        transform: translateY(0);
+      }
+
+      .settings-inner {
+        padding: 0 32px 60px;
+        max-width: 380px;
+        margin: 0 auto;
+      }
+
+      .settings-header {
+        font-family: 'Cormorant Garamond', Georgia, serif;
+        font-style: italic;
+        font-size: 14px;
+        color: #fffef0;
+        opacity: 0.5;
+        text-align: center;
+        margin-bottom: 36px;
+      }
+
+      .settings-section {
+        margin-bottom: 32px;
+      }
+
+      .settings-label {
+        font-family: 'Cormorant Garamond', Georgia, serif;
+        font-style: italic;
+        font-size: 13px;
+        color: #fffef0;
+        opacity: 0.4;
+        margin-bottom: 14px;
+        text-transform: lowercase;
+      }
+
+      .settings-sound-name {
+        font-family: 'Cormorant Garamond', Georgia, serif;
+        font-style: italic;
+        font-size: 11px;
+        color: #fffef0;
+        opacity: 0.3;
+        margin-top: 8px;
+      }
+
+      /* Volume slider */
+      .volume-slider {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 100%;
+        height: 2px;
+        background: rgba(255, 254, 240, 0.2);
+        border-radius: 1px;
+        outline: none;
+        cursor: pointer;
+      }
+
+      .volume-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: #fffef0;
+        border: none;
+        cursor: pointer;
+      }
+
+      .volume-slider::-moz-range-thumb {
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: #fffef0;
+        border: none;
+        cursor: pointer;
+      }
+
+      .volume-slider::-moz-range-progress {
+        background: rgba(255, 254, 240, 0.6);
+        height: 2px;
+      }
+
+      /* Location display */
+      .settings-coords {
+        font-size: 16px;
+        color: #fffef0;
+        opacity: 0.7;
+        margin-bottom: 16px;
+      }
+
+      .settings-location-input-wrap {
+        position: relative;
+        margin-bottom: 8px;
+      }
+
+      .settings-location-input {
+        width: 100%;
+        background: none;
+        border: none;
+        border-bottom: 1px solid rgba(255, 254, 240, 0.2);
+        font-family: 'Cormorant Garamond', Georgia, serif;
+        font-size: 16px;
+        color: #fffef0;
+        padding: 6px 30px 6px 0;
+        outline: none;
+        touch-action: manipulation;
+      }
+
+      .settings-location-input::placeholder {
+        font-style: italic;
+        color: rgba(255, 254, 240, 0.3);
+      }
+
+      .settings-submit-btn {
+        position: absolute;
+        right: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        color: #fffef0;
+        opacity: 0.4;
+        font-size: 18px;
+        cursor: pointer;
+        padding: 4px 2px;
+        line-height: 1;
+      }
+
+      .settings-submit-btn:hover { opacity: 0.7; }
+
+      .settings-location-note {
+        font-family: 'Cormorant Garamond', Georgia, serif;
+        font-size: 13px;
+        color: #fffef0;
+        opacity: 0.3;
+        margin-top: 6px;
+      }
+
+      .settings-gps-link {
+        font-family: 'Cormorant Garamond', Georgia, serif;
+        font-style: italic;
+        font-size: 13px;
+        color: #fffef0;
+        opacity: 0.4;
+        cursor: pointer;
+        background: none;
+        border: none;
+        padding: 0;
+        margin-top: 8px;
+        display: inline-block;
+      }
+
+      .settings-gps-link:hover { opacity: 0.7; }
+
+      .settings-about {
+        text-align: center;
+      }
+
+      .settings-about-line1 {
+        font-family: 'Cormorant Garamond', Georgia, serif;
+        font-style: italic;
+        font-size: 16px;
+        color: #fffef0;
+        opacity: 0.7;
+        margin-bottom: 4px;
+      }
+
+      .settings-about-line2 {
+        font-family: 'Cormorant Garamond', Georgia, serif;
+        font-size: 13px;
+        color: #fffef0;
+        opacity: 0.4;
+      }
+
+      .settings-confirmation {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-family: 'Cormorant Garamond', Georgia, serif;
+        font-style: italic;
+        font-size: 18px;
+        color: #fffef0;
+        opacity: 0;
+        z-index: 100;
+        pointer-events: none;
+        transition: opacity 400ms ease;
+      }
+
+      .settings-confirmation.visible {
+        opacity: 1;
       }
 
       .view {
@@ -281,49 +662,65 @@
     <div id="moon-container">
       <canvas id="moon-three-canvas"></canvas>
     </div>
+    <div id="moon-tap-target"></div>
+
+    <!-- ==================== INFO DRAWER ==================== -->
+    <div id="drawer-backdrop"></div>
+    <div id="info-drawer">
+      <div class="drawer-handle"></div>
+      <div class="drawer-body" id="drawer-content"></div>
+    </div>
+
+    <!-- ==================== SETTINGS OVERLAY ==================== -->
+    <div id="settings-backdrop"></div>
+    <div id="settings-overlay">
+      <div class="drawer-handle"></div>
+      <div class="settings-inner">
+        <div class="settings-header">vigil</div>
+
+        <div class="settings-section">
+          <div class="settings-label">sound</div>
+          <input type="range" class="volume-slider" id="volume-slider" min="0" max="1" step="0.01" value="0.25" />
+          <div class="settings-sound-name">crickets</div>
+        </div>
+
+        <div class="settings-section">
+          <div class="settings-label">location</div>
+          <div class="settings-coords" id="settings-coords"></div>
+          <div class="settings-location-input-wrap">
+            <input type="text" class="settings-location-input" id="location-input" placeholder="enter a city or place..." autocomplete="off" />
+            <button class="settings-submit-btn" id="location-submit" aria-label="Search">→</button>
+          </div>
+          <div class="settings-location-note" id="location-note"></div>
+          <button class="settings-gps-link" id="gps-link">use my location</button>
+        </div>
+
+        <div class="settings-section settings-about">
+          <div class="settings-label" style="text-align:center">about</div>
+          <div class="settings-about-line1">Vigil reads the sky where you are.</div>
+          <div class="settings-about-line2">Built on the spring equinox, 2026.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-confirmation" id="settings-confirmation"></div>
 
     <!-- ==================== TAB BAR ==================== -->
     <nav id="tab-bar">
       <div class="tab-icon active" data-tab="sky" onclick="switchTab('sky')">
-        <svg viewBox="0 0 24 24">
-          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-        </svg>
+        <img src="moon.png" alt="Sky" draggable="false" />
       </div>
       <div class="tab-icon" data-tab="day" onclick="switchTab('day')">
-        <svg viewBox="0 0 24 24">
-          <circle cx="12" cy="12" r="5" />
-          <line x1="12" y1="1" x2="12" y2="3" />
-          <line x1="12" y1="21" x2="12" y2="23" />
-          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
-          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
-          <line x1="1" y1="12" x2="3" y2="12" />
-          <line x1="21" y1="12" x2="23" y2="12" />
-          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
-          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
-        </svg>
+        <img src="sun.png" alt="Day" draggable="false" />
       </div>
       <div class="tab-icon" data-tab="nature" onclick="switchTab('nature')">
-        <svg viewBox="0 0 24 24">
-          <path
-            d="M17 8C8 10 5.9 16.17 3.82 21.34l1.89.66L7 19c4-4 7-5 11-6 4.17-1 6-4 6-8-2 0-5 .5-7 3z"
-          />
-          <path d="M2 22l1-1" />
-        </svg>
+        <img src="sprig.png" alt="Nature" draggable="false" />
       </div>
       <div class="tab-icon" data-tab="today" onclick="switchTab('today')">
-        <svg viewBox="0 0 24 24">
-          <path d="M18 11V6a2 2 0 0 0-4 0v1a2 2 0 0 0-4 0v1a2 2 0 0 0-4 0v5" />
-          <path d="M6 13v-1a2 2 0 0 0-2 2v1a8 8 0 0 0 16 0v-3a2 2 0 0 0-2-2" />
-        </svg>
+        <img src="flame.png" alt="Today" draggable="false" />
       </div>
-      <div class="tab-icon" id="sound-toggle" onclick="toggleSound()">
-        <svg viewBox="0 0 24 24">
-          <circle cx="12" cy="12" r="3" />
-          <path
-            d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"
-          />
-          <line id="mute-line" x1="4" y1="4" x2="20" y2="20" stroke-width="2.5" style="display:none" />
-        </svg>
+      <div class="tab-icon" id="settings-tab" onclick="toggleSettings()">
+        <img src="compass.png" alt="Settings" draggable="false" />
       </div>
     </nav>
 
@@ -560,7 +957,6 @@
         ["Caph", 0.153, 59.15, 2.27, 0.34],
         ["Ruchbah", 1.431, 60.24, 2.68, 0.13],
         ["Navi", 0.945, 60.72, 2.47, -0.15],
-        ["Deneb Kaitos", 0.726, -17.99, 2.04, 1.02],
         ["Mirach", 1.163, 35.62, 2.05, 1.58],
         ["Alpheratz", 0.14, 29.09, 2.06, -0.04],
         ["Sheratan", 1.911, 20.81, 2.64, 0.17],
@@ -576,7 +972,6 @@
         ["Wasat", 7.335, 21.98, 3.53, 0.34],
         ["Asellus Borealis", 8.745, 21.47, 4.66, 0.14],
         ["Asellus Australis", 8.778, 18.15, 3.94, 1.0],
-        ["Algieba2", 10.333, 19.84, 2.28, 1.14],
         ["Zosma", 11.235, 20.52, 2.56, 0.13],
         ["Chertan", 11.237, 15.43, 3.33, 0.09],
         ["Porrima", 12.694, -1.45, 2.74, 0.37],
@@ -592,10 +987,7 @@
         ["Algorab", 12.497, -16.52, 2.95, 0.01],
         ["Sadalmelik", 22.096, -0.32, 2.96, 0.97],
         ["Sadalsuud", 21.526, -5.57, 2.91, 0.83],
-        ["Markab2", 23.079, 15.21, 2.49, -0.04],
         ["Algenib", 0.221, 15.18, 2.83, -0.11],
-        ["Schedir", 0.675, 56.54, 2.24, 1.17],
-        ["Mirphak", 3.405, 49.86, 1.8, 0.48],
         ["Pherkad", 15.346, 71.83, 3.0, 0.05],
         ["Errai", 23.656, 77.63, 3.21, 1.03],
         ["Muscida", 8.504, 60.72, 3.36, 0.95],
@@ -609,7 +1001,6 @@
         ["Muphrid", 13.912, 18.4, 2.68, 0.58],
         ["Kornephoros", 16.504, 21.49, 2.77, 0.94],
         ["Marfik", 16.115, 1.98, 3.82, 0.07],
-        ["RasAlhague", 17.582, 12.56, 2.08, 0.15],
         ["Cebalrai", 17.724, 4.57, 2.77, 0.97],
       ];
 
@@ -1008,6 +1399,120 @@
         ],
       };
 
+      /* ==================== CONSTELLATION METADATA ==================== */
+
+      const CONSTELLATION_META = {
+        orion: {
+          latin: 'The Hunter',
+          brightestStar: 'Rigel (0.13)',
+          bestSeen: '9 PM, Jan–Mar',
+          description: 'He stands at the threshold of winter and spring, a hunter frozen mid-stride. The ancient Greeks saw in him the great Boeotian giant, and watched his belt rise as a signal that the cold was breaking.'
+        },
+        taurus: {
+          latin: 'The Bull',
+          brightestStar: 'Aldebaran (0.85)',
+          bestSeen: '9 PM, Dec–Feb',
+          description: 'The bull charges westward through the winter sky, its red eye Aldebaran burning low. Zeus took this form to carry Europa across the sea — or so the story goes. The Pleiades ride on its shoulder like old memories.'
+        },
+        gemini: {
+          latin: 'The Twins',
+          brightestStar: 'Pollux (1.14)',
+          bestSeen: '9 PM, Jan–Mar',
+          description: 'Castor and Pollux, the inseparable twins — one mortal, one divine. When Castor fell, Pollux begged Zeus to share his immortality. Now they stand together forever, shoulder to shoulder in the winter sky.'
+        },
+        leo: {
+          latin: 'The Lion',
+          brightestStar: 'Regulus (1.35)',
+          bestSeen: '9 PM, Mar–May',
+          description: 'The lion reclines across the spring sky, head lifted, watching. The Babylonians saw him too — a great beast marking the summer solstice when the sun burned hottest. His heart-star Regulus means "little king."'
+        },
+        cancer: {
+          latin: 'The Crab',
+          brightestStar: 'Al Tarf (3.5)',
+          bestSeen: '9 PM, Feb–Apr',
+          description: 'The faintest constellation of the zodiac, a small scattered cluster between the twins and the lion. Hera placed this crab in the sky for its bravery — it pinched Heracles during his battle with the Hydra and was crushed for it.'
+        },
+        virgo: {
+          latin: 'The Maiden',
+          brightestStar: 'Spica (0.97)',
+          bestSeen: '9 PM, Apr–Jun',
+          description: 'She holds a sheaf of wheat, Spica blazing in her hand. The maiden is Persephone, Demeter, Astraea — every culture saw a woman here, connected to harvest and the turning of the seasons.'
+        },
+        bootes: {
+          latin: 'The Herdsman',
+          brightestStar: 'Arcturus (−0.05)',
+          bestSeen: '9 PM, May–Jul',
+          description: 'The herdsman follows the Great Bear eternally around the pole. His star Arcturus — "bear-watcher" — is one of the brightest in all the sky, an orange giant 37 light-years away, older than our sun.'
+        },
+        scorpius: {
+          latin: 'The Scorpion',
+          brightestStar: 'Antares (0.96)',
+          bestSeen: '9 PM, Jun–Aug',
+          description: 'Low on the southern horizon, the scorpion drags its tail through the thickest part of the Milky Way. Antares pulses red at its heart — "rival of Mars" — a supergiant so vast it would swallow our sun whole.'
+        },
+        sagittarius: {
+          latin: 'The Archer',
+          brightestStar: 'Kaus Australis (1.85)',
+          bestSeen: '9 PM, Jul–Sep',
+          description: 'The archer aims toward the heart of the galaxy. When you look at Sagittarius you are looking toward the centre of the Milky Way — a supermassive black hole wrapped in 26,000 light-years of stars and dust.'
+        },
+        lyra: {
+          latin: 'The Lyre',
+          brightestStar: 'Vega (0.03)',
+          bestSeen: '9 PM, Jul–Sep',
+          description: 'Orpheus played this lyre so beautifully that rivers stopped flowing to listen. Vega, its brightest star, was the pole star 12,000 years ago and will be again — the sky turns on the longest of clocks.'
+        },
+        pegasus: {
+          latin: 'The Winged Horse',
+          brightestStar: 'Enif (2.39)',
+          bestSeen: '9 PM, Sep–Nov',
+          description: 'The Great Square of Pegasus opens like a window in the autumn sky. The winged horse sprang from the blood of Medusa — a creature born from violence that became a symbol of poetic inspiration.'
+        },
+        aquila: {
+          latin: 'The Eagle',
+          brightestStar: 'Altair (0.77)',
+          bestSeen: '9 PM, Jul–Oct',
+          description: 'The eagle soars along the Milky Way, Altair gleaming at its throat. In the Summer Triangle it forms with Vega and Deneb, Altair is the closest of the three — just 17 light-years from here.'
+        },
+        cygnus: {
+          latin: 'The Swan',
+          brightestStar: 'Deneb (1.25)',
+          bestSeen: '9 PM, Jul–Nov',
+          description: 'The swan flies south along the river of the Milky Way, wings spread wide. Deneb at its tail is one of the most luminous stars visible to the naked eye — 200,000 times brighter than the sun, impossibly far away.'
+        },
+        andromeda: {
+          latin: 'The Chained Princess',
+          brightestStar: 'Alpheratz (2.06)',
+          bestSeen: '9 PM, Sep–Dec',
+          description: 'Andromeda was chained to a rock by the sea, a sacrifice to the monster Cetus. Perseus rescued her, and the galaxy that bears her name is the most distant object you can see with your bare eyes — two million light-years.'
+        },
+        perseus: {
+          latin: 'The Hero',
+          brightestStar: 'Mirfak (1.79)',
+          bestSeen: '9 PM, Oct–Feb',
+          description: 'Perseus carries the severed head of Medusa through the northern sky. His star Algol — "the demon star" — winks every three days as its companion eclipses it, a phenomenon that frightened ancient astronomers.'
+        },
+        aries: {
+          latin: 'The Ram',
+          brightestStar: 'Hamal (2.00)',
+          bestSeen: '9 PM, Nov–Jan',
+          description: 'A small, ancient constellation — the ram whose golden fleece Jason sought. Two thousand years ago the sun crossed the equator here at the spring equinox. The age of Aries has passed, but the ram remains.'
+        },
+      };
+
+      /* ==================== MOON PHASE DESCRIPTIONS ==================== */
+
+      const MOON_PHASE_POEMS = {
+        'New Moon': 'A breath held. The sky turns inward.',
+        'Waxing Crescent': 'Something is beginning. Let it.',
+        'First Quarter': 'Half light, half dark. A decision point.',
+        'Waxing Gibbous': 'The work continues. You are close.',
+        'Full Moon': 'Nothing is hidden tonight.',
+        'Waning Gibbous': 'The harvest. Take stock of what came.',
+        'Last Quarter': 'Release what the full moon revealed.',
+        'Waning Crescent': 'Rest. The cycle is completing itself.',
+      };
+
       /* ==================== MOON PHASE CALCULATION (Meeus) ==================== */
 
       function calcMoonPhase(date) {
@@ -1399,15 +1904,15 @@
       const ambientAudio = new Audio('crickets.wav');
       ambientAudio.loop = true;
       ambientAudio.volume = 0;
-      let soundEnabled = localStorage.getItem('vigil_sound') !== 'off';
+      let audioVolume = parseFloat(localStorage.getItem('vigil_volume') ?? '0.25');
       let audioStarted = false;
 
       function startAmbientAudio() {
-        if (audioStarted || !soundEnabled) return;
+        if (audioStarted) return;
+        if (audioVolume <= 0) return;
         audioStarted = true;
         ambientAudio.play().then(() => {
-          // Fade in over 3 seconds
-          const target = 0.25;
+          const target = audioVolume;
           const steps = 60;
           const interval = 3000 / steps;
           let step = 0;
@@ -1419,42 +1924,351 @@
         }).catch(() => { audioStarted = false; });
       }
 
-      function toggleSound() {
-        soundEnabled = !soundEnabled;
-        localStorage.setItem('vigil_sound', soundEnabled ? 'on' : 'off');
-        const muteLine = document.getElementById('mute-line');
-        const toggle = document.getElementById('sound-toggle');
-        if (soundEnabled) {
-          muteLine.style.display = 'none';
-          toggle.querySelector('svg').style.opacity = '';
+      function setVolume(val) {
+        audioVolume = val;
+        localStorage.setItem('vigil_volume', val);
+        if (val > 0) {
           if (!audioStarted) {
             startAmbientAudio();
           } else {
-            ambientAudio.volume = 0.25;
+            ambientAudio.volume = val;
           }
         } else {
-          muteLine.style.display = '';
-          toggle.querySelector('svg').style.opacity = '0.3';
           ambientAudio.volume = 0;
+          if (audioStarted) {
+            ambientAudio.pause();
+            audioStarted = false;
+          }
         }
-      }
-
-      // Apply initial mute state on load
-      if (!soundEnabled) {
-        const muteLine = document.getElementById('mute-line');
-        const toggle = document.getElementById('sound-toggle');
-        if (muteLine) muteLine.style.display = '';
-        if (toggle) toggle.querySelector('svg').style.opacity = '0.3';
       }
 
       // Start audio on first user interaction
       function onFirstInteraction() {
         document.removeEventListener('click', onFirstInteraction);
         document.removeEventListener('touchstart', onFirstInteraction);
-        if (soundEnabled) startAmbientAudio();
+        if (audioVolume > 0) startAmbientAudio();
       }
       document.addEventListener('click', onFirstInteraction);
       document.addEventListener('touchstart', onFirstInteraction);
+
+      /* ==================== SETTINGS OVERLAY ==================== */
+
+      let settingsOpen = false;
+      let settingsTouchStartY = 0;
+
+      function formatCoords(lat, lon) {
+        const latDir = lat >= 0 ? 'N' : 'S';
+        const lonDir = lon >= 0 ? 'E' : 'W';
+        return `${Math.abs(lat).toFixed(2)}° ${latDir}, ${Math.abs(lon).toFixed(2)}° ${lonDir}`;
+      }
+
+      function updateSettingsUI() {
+        const coordsEl = document.getElementById('settings-coords');
+        const noteEl = document.getElementById('location-note');
+        const slider = document.getElementById('volume-slider');
+        if (coordsEl) coordsEl.textContent = formatCoords(userLocation.lat, userLocation.lon);
+        if (noteEl) {
+          const isManual = localStorage.getItem('vigil_manual_location') === 'true';
+          noteEl.textContent = isManual ? 'using saved location' : 'using your location';
+        }
+        if (slider) slider.value = audioVolume;
+        // Update slider fill
+        updateSliderFill();
+      }
+
+      function updateSliderFill() {
+        const slider = document.getElementById('volume-slider');
+        if (!slider) return;
+        const pct = (slider.value / slider.max) * 100;
+        slider.style.background = `linear-gradient(to right, rgba(255,254,240,0.6) ${pct}%, rgba(255,254,240,0.2) ${pct}%)`;
+      }
+
+      function toggleSettings() {
+        if (settingsOpen) {
+          closeSettings();
+        } else {
+          openSettings();
+        }
+      }
+
+      function openSettings() {
+        updateSettingsUI();
+        document.getElementById('settings-overlay').classList.add('open');
+        document.getElementById('settings-backdrop').classList.add('open');
+        settingsOpen = true;
+      }
+
+      function closeSettings() {
+        document.getElementById('settings-overlay').classList.remove('open');
+        document.getElementById('settings-backdrop').classList.remove('open');
+        settingsOpen = false;
+      }
+
+      // Tap backdrop to close settings
+      document.getElementById('settings-backdrop').addEventListener('click', closeSettings);
+
+      // Volume slider
+      document.getElementById('volume-slider').addEventListener('input', (e) => {
+        setVolume(parseFloat(e.target.value));
+        updateSliderFill();
+      });
+
+      // Settings swipe-to-close
+      document.getElementById('settings-overlay').addEventListener('touchstart', (e) => {
+        settingsTouchStartY = e.touches[0].clientY;
+      }, { passive: true });
+
+      document.getElementById('settings-overlay').addEventListener('touchmove', (e) => {
+        const dy = e.touches[0].clientY - settingsTouchStartY;
+        if (dy > 80) closeSettings();
+      }, { passive: true });
+
+      // Location search
+      async function searchLocation(query) {
+        if (!query.trim()) return;
+        try {
+          const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query.trim())}&count=1`;
+          const resp = await fetch(url);
+          const data = await resp.json();
+          if (data.results && data.results.length > 0) {
+            const place = data.results[0];
+            userLocation = { lat: place.latitude, lon: place.longitude };
+            storeLocation(place.latitude, place.longitude);
+            localStorage.setItem('vigil_manual_location', 'true');
+            closeSettings();
+            refreshSceneData();
+            showConfirmation(place.name);
+          }
+        } catch (e) {
+          // silently fail
+        }
+      }
+
+      document.getElementById('location-submit').addEventListener('click', () => {
+        searchLocation(document.getElementById('location-input').value);
+      });
+
+      document.getElementById('location-input').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          searchLocation(e.target.value);
+        }
+      });
+
+      // GPS re-trigger
+      document.getElementById('gps-link').addEventListener('click', () => {
+        if (!navigator.geolocation) return;
+        navigator.geolocation.getCurrentPosition((pos) => {
+          userLocation = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+          storeLocation(userLocation.lat, userLocation.lon);
+          localStorage.removeItem('vigil_manual_location');
+          closeSettings();
+          refreshSceneData();
+          showConfirmation('your location');
+        }, () => {}, { timeout: 10000 });
+      });
+
+      function showConfirmation(text) {
+        const el = document.getElementById('settings-confirmation');
+        el.textContent = text;
+        el.classList.add('visible');
+        setTimeout(() => el.classList.remove('visible'), 2000);
+      }
+
+      function refreshSceneData() {
+        const now = new Date();
+        const moonData = calcMoonPhase(now);
+        selectConstellations();
+        computeStarPositions();
+        drawConstellations();
+        if (moonRenderer) {
+          initMoonThreeJS(moonData.phase, moonData.illumination);
+        }
+        setupMoonTapTarget();
+        // Refresh weather in background
+        fetchWeather(userLocation.lat, userLocation.lon).then(weatherData => {
+          if (window.VIGIL) window.VIGIL.weather = weatherData;
+        });
+        // Update VIGIL object
+        const sunData = calcSolar(now, userLocation.lat, userLocation.lon);
+        if (window.VIGIL) {
+          window.VIGIL.location = { lat: userLocation.lat, lon: userLocation.lon };
+          window.VIGIL.moon = moonData;
+          window.VIGIL.sun = {
+            sunrise: sunData.sunrise, sunset: sunData.sunset,
+            solarNoon: sunData.solarNoon, dayLength: sunData.dayLength,
+            dayLengthDelta: sunData.dayLengthDelta,
+          };
+        }
+      }
+
+      /* ==================== INFO DRAWER ==================== */
+
+      let drawerOpen = false;
+      let drawerTouchStartY = 0;
+
+      function openDrawer(html) {
+        const drawer = document.getElementById('info-drawer');
+        const backdrop = document.getElementById('drawer-backdrop');
+        document.getElementById('drawer-content').innerHTML = html;
+        backdrop.classList.add('open');
+        requestAnimationFrame(() => {
+          drawer.classList.add('open');
+        });
+        drawerOpen = true;
+      }
+
+      function closeDrawer() {
+        if (!drawerOpen) return;
+        const drawer = document.getElementById('info-drawer');
+        const backdrop = document.getElementById('drawer-backdrop');
+        drawer.classList.remove('open');
+        backdrop.classList.remove('open');
+        drawerOpen = false;
+      }
+
+      // Tap backdrop to close
+      document.getElementById('drawer-backdrop').addEventListener('click', closeDrawer);
+
+      // Swipe down to close
+      document.getElementById('info-drawer').addEventListener('touchstart', (e) => {
+        drawerTouchStartY = e.touches[0].clientY;
+      }, { passive: true });
+
+      document.getElementById('info-drawer').addEventListener('touchmove', (e) => {
+        const dy = e.touches[0].clientY - drawerTouchStartY;
+        if (dy > 60) closeDrawer();
+      }, { passive: true });
+
+      /* --- Moon phase SVG icon --- */
+      function moonPhaseSVG(phase) {
+        // phase: 0 = new, 0.25 = first quarter, 0.5 = full, 0.75 = last quarter
+        const size = 60;
+        const r = 26;
+        const cx = size / 2, cy = size / 2;
+
+        let svg = `<svg class="drawer-phase-icon" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">`;
+        svg += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="#111828" stroke="rgba(255,254,240,0.15)" stroke-width="1"/>`;
+
+        if (phase < 0.01 || phase > 0.99) {
+          // New moon — just the dark circle
+        } else if (Math.abs(phase - 0.5) < 0.01) {
+          // Full moon
+          svg += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="#fffef0" opacity="0.9"/>`;
+        } else {
+          // Draw illuminated portion
+          const lit = phase < 0.5;
+          const t = lit ? phase * 2 : (phase - 0.5) * 2;
+          // t goes 0→1 within each half
+          const k = lit ? (1 - 2 * t) : (2 * t - 1);
+          const sweepR = Math.abs(k) * r;
+          const bulge = k > 0; // true = crescent, false = gibbous
+
+          // Arc from top to bottom on the lit side
+          const litSide = lit ? 'right' : 'left';
+          const startY = cy - r;
+          const endY = cy + r;
+
+          // Terminator is an elliptical arc
+          const terminatorX = cx;
+          const arcSweep = bulge ? 0 : 1;
+
+          if (litSide === 'right') {
+            svg += `<path d="M ${cx} ${startY} A ${r} ${r} 0 0 1 ${cx} ${endY} A ${sweepR} ${r} 0 0 ${arcSweep} ${cx} ${startY}" fill="#fffef0" opacity="0.9"/>`;
+          } else {
+            svg += `<path d="M ${cx} ${startY} A ${r} ${r} 0 0 0 ${cx} ${endY} A ${sweepR} ${r} 0 0 ${1 - arcSweep} ${cx} ${startY}" fill="#fffef0" opacity="0.9"/>`;
+          }
+        }
+
+        svg += '</svg>';
+        return svg;
+      }
+
+      /* --- Moon drawer --- */
+      function openMoonDrawer() {
+        const data = calcMoonPhase(new Date());
+        const isWaning = data.phase > 0.5;
+        const nextLabel = isWaning ? 'Next new' : 'Next full';
+        const nextDays = isWaning ? data.daysToNew : data.daysToFull;
+        const nextText = nextDays < 1 ? 'tonight' : `in ${Math.round(nextDays)} days`;
+
+        const html = `
+          ${moonPhaseSVG(data.phase)}
+          <div class="drawer-title">${data.phaseName}</div>
+          <div class="drawer-poem">${MOON_PHASE_POEMS[data.phaseName] || ''}</div>
+          <div class="drawer-divider"></div>
+          <div class="drawer-stats">
+            <div class="drawer-stat">
+              <div class="drawer-stat-value">${Math.round(data.illumination)}%</div>
+              <div class="drawer-stat-label">illumination</div>
+            </div>
+            <div class="drawer-stat">
+              <div class="drawer-stat-value">${Math.round(data.ageDays)}d</div>
+              <div class="drawer-stat-label">moon age</div>
+            </div>
+            <div class="drawer-stat">
+              <div class="drawer-stat-value">${nextText}</div>
+              <div class="drawer-stat-label">${nextLabel}</div>
+            </div>
+          </div>
+        `;
+        openDrawer(html);
+      }
+
+      /* --- Constellation drawer --- */
+      function openConstellationDrawer(key) {
+        const c = CONSTELLATIONS[key];
+        const m = CONSTELLATION_META[key];
+        if (!c || !m) return;
+
+        const now = new Date();
+        const jd = toJD(now);
+        const lstDeg = lst(jd, userLocation.lon);
+        // Check if constellation centre is above horizon
+        let sumAlt = 0, count = 0;
+        for (const s of c.stars) {
+          const { alt } = raDecToAltAz(s.ra, s.dec, lstDeg, userLocation.lat);
+          sumAlt += alt;
+          count++;
+        }
+        const avgAlt = count > 0 ? sumAlt / count : 0;
+        const horizonNote = avgAlt > 30 ? 'High above the horizon' :
+                            avgAlt > 10 ? 'Above the horizon' :
+                            'Near the horizon';
+
+        const html = `
+          <div class="drawer-title">${c.name}</div>
+          <div class="drawer-subtitle">${m.latin}</div>
+          <div class="drawer-description">${m.description}</div>
+          <div class="drawer-divider"></div>
+          <div class="drawer-stats">
+            <div class="drawer-stat">
+              <div class="drawer-stat-value">${m.bestSeen}</div>
+              <div class="drawer-stat-label">best visible</div>
+            </div>
+            <div class="drawer-stat">
+              <div class="drawer-stat-value">${m.brightestStar}</div>
+              <div class="drawer-stat-label">brightest star</div>
+            </div>
+          </div>
+          <div class="drawer-footnote">${horizonNote}</div>
+        `;
+        openDrawer(html);
+      }
+
+      /* --- Setup moon tap target size --- */
+      function setupMoonTapTarget() {
+        const moonSize = window.innerWidth <= 600 ? 180 : 220;
+        const tapSize = moonSize + 80; // 40px larger radius
+        const tap = document.getElementById('moon-tap-target');
+        tap.style.width = tapSize + 'px';
+        tap.style.height = tapSize + 'px';
+      }
+
+      document.getElementById('moon-tap-target').addEventListener('click', (e) => {
+        e.stopPropagation();
+        openMoonDrawer();
+      });
 
       /* ==================== MILKY WAY (Layer 2 — drawn once) ==================== */
 
@@ -1667,8 +2481,8 @@
             // Atmospheric scintillation: multiple fast random phases
             twinklePhase1: Math.random() * 1000,
             twinklePhase2: Math.random() * 1000,
-            twinkleSpeed1: 12 + Math.random() * 18, // fast: 40-80ms cycle
-            twinkleSpeed2: 8 + Math.random() * 12,
+            twinkleSpeed1: 150 + Math.random() * 250, // 150-400ms period (used as ms divisor)
+            twinkleSpeed2: 200 + Math.random() * 300,
           });
         }
 
@@ -1728,13 +2542,15 @@
             opacity = Math.min(1.0, opacity * 1.3);
           }
 
-          // Atmospheric scintillation — rapid subtle opacity + colour temp flicker
+          // Atmospheric scintillation — smooth gentle shimmer
           if (star.isTwinkle) {
-            const flicker1 = Math.sin(time * star.twinkleSpeed1 + star.twinklePhase1);
-            const flicker2 = Math.sin(time * star.twinkleSpeed2 + star.twinklePhase2);
-            // ±15% opacity variation from two overlapping sine waves
-            const opacityMod = 1.0 + 0.10 * flicker1 + 0.05 * flicker2;
-            opacity *= clamp(opacityMod, 0.85, 1.15);
+            const t = performance.now();
+            const wave1 = Math.sin(t / star.twinkleSpeed1 + star.twinklePhase1);
+            const wave2 = Math.sin(t / star.twinkleSpeed2 + star.twinklePhase2);
+            const amp = star.isHero ? 0.06 : 0.04;
+            const opacityMod = 1.0 + amp * wave1 + (amp * 0.5) * wave2;
+            const baseOpacity = star.opacity;
+            opacity = clamp(opacity * opacityMod, baseOpacity * 0.92, baseOpacity * 1.08);
           }
 
           // Draw the cached sprite
@@ -1776,24 +2592,35 @@
         const h = window.innerHeight;
         let svgContent = "";
 
-        const primaryKey = activeConstellationKeys[0];
-        if (!primaryKey || !CONSTELLATIONS[primaryKey]) {
-          svg.innerHTML = "";
-          return primaryKey;
+        // Try each constellation in order until we find one with visible stars
+        let primaryKey = null;
+        let constellation = null;
+        let screenStars = [];
+        let visibleCount = 0;
+
+        for (const key of activeConstellationKeys) {
+          const c = CONSTELLATIONS[key];
+          if (!c) continue;
+          const positions = [];
+          let vis = 0;
+          for (const s of c.stars) {
+            const { alt, az } = raDecToAltAz(s.ra, s.dec, lstDeg, userLocation.lat);
+            const pos = altAzToScreen(alt, az, w, h);
+            positions.push(pos);
+            if (pos) vis++;
+          }
+          if (vis >= 2) {
+            primaryKey = key;
+            constellation = c;
+            screenStars = positions;
+            visibleCount = vis;
+            break;
+          }
         }
 
-        const constellation = CONSTELLATIONS[primaryKey];
-        const screenStars = [];
-
-        for (const s of constellation.stars) {
-          const { alt, az } = raDecToAltAz(
-            s.ra,
-            s.dec,
-            lstDeg,
-            userLocation.lat,
-          );
-          const pos = altAzToScreen(alt, az, w, h);
-          screenStars.push(pos);
+        if (!primaryKey || !constellation) {
+          svg.innerHTML = "";
+          return null;
         }
 
         // Lines
@@ -1818,14 +2645,25 @@
           count++;
         });
 
-        // Constellation name label below the centre
+        // Constellation name label below the centre with tap target
         if (count > 0) {
           const labelX = sumX / count;
           const labelY = sumY / count + 30;
-          svgContent += `<text class="constellation-label" x="${labelX}" y="${labelY}">${constellation.name}</text>`;
+          svgContent += `<rect x="${labelX - 60}" y="${labelY - 30}" width="120" height="60" fill="transparent" style="pointer-events:all;cursor:pointer" data-key="${primaryKey}" class="constellation-tap" />`;
+          svgContent += `<text class="constellation-label" x="${labelX}" y="${labelY}" style="pointer-events:none">${constellation.name}</text>`;
         }
 
         svg.innerHTML = svgContent;
+
+        // Bind constellation tap handler
+        const tapTarget = svg.querySelector('.constellation-tap');
+        if (tapTarget) {
+          tapTarget.addEventListener('click', (e) => {
+            e.stopPropagation();
+            openConstellationDrawer(tapTarget.getAttribute('data-key'));
+          });
+        }
+
         return primaryKey;
       }
 
@@ -2028,6 +2866,7 @@
 
         // Init Three.js moon with real phase
         initMoonThreeJS(moonData.phase, moonData.illumination);
+        setupMoonTapTarget();
 
         // Setup parallax
         setupParallaxInput();
@@ -2040,6 +2879,7 @@
           drawMilkyWay();
           computeStarPositions();
           drawConstellations();
+          setupMoonTapTarget();
           // Resize moon renderer
           if (moonRenderer) {
             const moonSize = window.innerWidth <= 600 ? 180 : 220;
