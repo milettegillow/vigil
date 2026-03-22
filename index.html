@@ -35,6 +35,8 @@
 
       html,
       body {
+        margin: 0;
+        padding: 0;
         width: 100%;
         height: 100%;
         overflow: hidden;
@@ -3235,17 +3237,30 @@
         const geometry = new THREE.SphereGeometry(1, 64, 64);
         const textureLoader = new THREE.TextureLoader();
 
-        // Load NASA textures
-        const colorMap = textureLoader.load("moon_color.jpg");
-        const bumpMap = textureLoader.load("moon_bump.jpg");
-
-        const material = new THREE.MeshStandardMaterial({
-          map: colorMap,
-          bumpMap: bumpMap,
-          bumpScale: 0.04,
+        // Fallback material in case textures fail
+        const fallbackMaterial = new THREE.MeshStandardMaterial({
+          color: 0x1a1a2e,
           roughness: 0.9,
           metalness: 0,
         });
+
+        const material = new THREE.MeshStandardMaterial({
+          roughness: 0.9,
+          metalness: 0,
+          bumpScale: 0.04,
+        });
+
+        // Load textures with error handling
+        textureLoader.load("moon_color.jpg",
+          (tex) => { material.map = tex; material.needsUpdate = true; if (moonRenderer) moonRenderer.render(moonScene, moonCamera); },
+          undefined,
+          () => { console.warn('Moon color texture failed to load'); material.color = new THREE.Color(0x1a1a2e); material.needsUpdate = true; }
+        );
+        textureLoader.load("moon_bump.jpg",
+          (tex) => { material.bumpMap = tex; material.needsUpdate = true; if (moonRenderer) moonRenderer.render(moonScene, moonCamera); },
+          undefined,
+          () => { console.warn('Moon bump texture failed to load'); }
+        );
 
         moonSphere = new THREE.Mesh(geometry, material);
         moonScene.add(moonSphere);
