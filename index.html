@@ -697,26 +697,46 @@
 
       .wheel-container {
         position: relative;
-        width: 260px;
-        height: 260px;
+        width: 300px;
+        height: 300px;
         margin: 0 auto 32px;
       }
 
-      .wheel-svg { width: 260px; height: 260px; }
-
-      .wheel-sabbat-label {
-        font-family: 'Cormorant Garamond', Georgia, serif;
-        font-style: italic;
-        font-size: 11px;
-        fill: #fffef0;
-        fill-opacity: 0.5;
-        text-anchor: middle;
-        cursor: pointer;
+      @media (min-width: 600px) {
+        .wheel-container { width: 340px; height: 340px; }
       }
 
-      .wheel-sabbat-label.current {
-        fill-opacity: 0.8;
-        font-size: 12px;
+      .wheel-img {
+        width: 100%;
+        height: 100%;
+        mix-blend-mode: lighten;
+        opacity: 0.9;
+        pointer-events: none;
+      }
+
+      .wheel-dot {
+        position: absolute;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: #fffef0;
+        box-shadow: 0 0 8px 3px rgba(255, 254, 240, 0.6);
+        transform: translate(-50%, -50%);
+        animation: wheel-pulse 2s ease-in-out infinite;
+      }
+
+      @keyframes wheel-pulse {
+        0%, 100% { transform: translate(-50%, -50%) scale(1); }
+        50% { transform: translate(-50%, -50%) scale(1.2); }
+      }
+
+      .wheel-tap-zone {
+        position: absolute;
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        cursor: pointer;
       }
 
       .wheel-tooltip {
@@ -864,16 +884,16 @@
       <div class="sun-atmos" style="width:400px;height:400px;top:5%;left:60%;background:radial-gradient(circle,rgba(255,154,60,0.06),transparent 70%)"></div>
       <div class="sun-atmos" style="width:500px;height:500px;top:10%;left:10%;background:radial-gradient(circle,rgba(255,217,125,0.05),transparent 70%)"></div>
       <div class="sun-atmos" style="width:350px;height:350px;top:25%;left:40%;background:radial-gradient(circle,rgba(255,154,60,0.04),transparent 70%)"></div>
-      <div class="sun-atmos" style="width:100%;height:1px;top:50%;left:0;border-radius:0;background:linear-gradient(to right,transparent,rgba(255,254,240,0.02),transparent)"></div>
-      <svg class="sun-icon" width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="#fffef0" stroke-width="1.5" stroke-linecap="round"><circle cx="16" cy="16" r="6"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="16" y1="26" x2="16" y2="30"/><line x1="2" y1="16" x2="6" y2="16"/><line x1="26" y1="16" x2="30" y2="16"/><line x1="6.1" y1="6.1" x2="8.9" y2="8.9"/><line x1="23.1" y1="23.1" x2="25.9" y2="25.9"/><line x1="6.1" y1="25.9" x2="8.9" y2="23.1"/><line x1="23.1" y1="8.9" x2="25.9" y2="6.1"/></svg>
+      <img class="sun-icon" src="sun.png" width="40" height="40" style="opacity:0.8" draggable="false" />
       <div class="sun-date" id="sun-date"></div>
       <div class="sun-rows" id="sun-rows"></div>
       <div class="sun-golden" id="sun-golden"></div>
     </div>
 
     <div class="view" id="view-nature">
-      <div class="wheel-container">
-        <svg class="wheel-svg" id="wheel-svg" viewBox="0 0 260 260"></svg>
+      <div class="wheel-container" id="wheel-container">
+        <img src="wheel.png" class="wheel-img" alt="Wheel of the Year" draggable="false" />
+        <div class="wheel-dot" id="wheel-dot"></div>
         <div class="wheel-tooltip" id="wheel-tooltip">
           <div class="wheel-tooltip-name" id="tooltip-name"></div>
           <div class="wheel-tooltip-date" id="tooltip-date"></div>
@@ -2217,58 +2237,42 @@
       function populateEarthTab() {
         const V = window.VIGIL;
         const wheelPos = V ? V.wheelOfYear || 0 : 0;
-        const cx = 130, cy = 130, r = 110;
-        const labelR = r + 24;
-        let svg = '';
+        const container = document.getElementById('wheel-container');
+        const size = container.offsetWidth;
+        const cx = size / 2, cy = size / 2;
+        const dotRadius = size * 0.517; // just outside the celtic border
 
-        // Outer circle
-        svg += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="rgba(255,254,240,0.2)" stroke-width="1"/>`;
+        // Position the glowing dot
+        const posAngleRad = (wheelPos * 360 - 90) * Math.PI / 180;
+        const dot = document.getElementById('wheel-dot');
+        dot.style.left = (cx + Math.cos(posAngleRad) * dotRadius) + 'px';
+        dot.style.top = (cy + Math.sin(posAngleRad) * dotRadius) + 'px';
 
-        // Find nearest two points to current position for brightness
-        const posAngleDeg = wheelPos * 360;
-        const nearestIndices = WHEEL_POINTS.map((p, i) => {
-          let diff = Math.abs(p.angle - posAngleDeg);
-          if (diff > 180) diff = 360 - diff;
-          return { i, diff };
-        }).sort((a, b) => a.diff - b.diff).slice(0, 2).map(x => x.i);
+        // Create tap zones for each wheel point
+        const existing = container.querySelectorAll('.wheel-tap-zone');
+        existing.forEach(el => el.remove());
 
-        // Spokes, dots, labels
         WHEEL_POINTS.forEach((s, i) => {
           const a = (s.angle - 90) * Math.PI / 180;
-          const x1 = cx + Math.cos(a) * r;
-          const y1 = cy + Math.sin(a) * r;
-          const dotR = s.major ? 5 : 3;
-          const dotOp = s.major ? 0.7 : 0.4;
-          const isNear = nearestIndices.includes(i);
-          svg += `<line x1="${cx}" y1="${cy}" x2="${x1}" y2="${y1}" stroke="rgba(255,254,240,0.15)" stroke-width="1"/>`;
-          svg += `<circle cx="${x1}" cy="${y1}" r="${dotR}" fill="rgba(255,254,240,${dotOp})" data-wp="${i}" style="cursor:pointer"/>`;
-          const lx = cx + Math.cos(a) * labelR;
-          const ly = cy + Math.sin(a) * labelR;
-          svg += `<text x="${lx}" y="${ly + 4}" class="wheel-sabbat-label${isNear ? ' current' : ''}" data-wp="${i}">${s.name}</text>`;
+          const zx = cx + Math.cos(a) * dotRadius;
+          const zy = cy + Math.sin(a) * dotRadius;
+          const zone = document.createElement('div');
+          zone.className = 'wheel-tap-zone';
+          zone.style.left = zx + 'px';
+          zone.style.top = zy + 'px';
+          zone.dataset.wp = i;
+          zone.addEventListener('click', (e) => {
+            e.stopPropagation();
+            showWheelTooltip(i, zone);
+          });
+          container.appendChild(zone);
         });
-
-        // Current position glow dot
-        const posAngle = (wheelPos * 360 - 90) * Math.PI / 180;
-        const px = cx + Math.cos(posAngle) * r;
-        const py = cy + Math.sin(posAngle) * r;
-        svg += `<circle cx="${px}" cy="${py}" r="4" fill="#fffef0" opacity="0.9"/>`;
-        svg += `<circle cx="${px}" cy="${py}" r="8" fill="#fffef0" opacity="0.15"/>`;
-
-        document.getElementById('wheel-svg').innerHTML = svg;
 
         // Celtic tree month
         const month = new Date().getMonth();
         const cm = CELTIC_MONTHS[month];
         document.getElementById('earth-tree').textContent = `the ${cm.tree} month`;
         document.getElementById('earth-nature').textContent = cm.nature;
-
-        // Wheel point tap handlers
-        document.getElementById('wheel-svg').addEventListener('click', (e) => {
-          const target = e.target.closest('[data-wp]');
-          if (!target) { hideWheelTooltip(); return; }
-          const idx = parseInt(target.getAttribute('data-wp'));
-          showWheelTooltip(idx, target);
-        });
       }
 
       function showWheelTooltip(idx, target) {
@@ -2278,13 +2282,14 @@
         document.getElementById('tooltip-date').textContent = s.date;
         document.getElementById('tooltip-text').textContent = s.text;
 
-        // Position near the clicked element
+        const container = document.getElementById('wheel-container');
+        const size = container.offsetWidth;
         const rect = target.getBoundingClientRect();
-        const container = document.querySelector('.wheel-container').getBoundingClientRect();
-        let left = rect.left - container.left - 60;
-        let top = rect.top - container.top + 20;
-        left = Math.max(0, Math.min(left, 260 - 220));
-        top = Math.max(0, Math.min(top, 260 - 80));
+        const cRect = container.getBoundingClientRect();
+        let left = rect.left - cRect.left - 60;
+        let top = rect.top - cRect.top + 30;
+        left = Math.max(0, Math.min(left, size - 220));
+        top = Math.max(0, Math.min(top, size - 80));
         tooltip.style.left = left + 'px';
         tooltip.style.top = top + 'px';
         tooltip.classList.add('visible');
@@ -2294,20 +2299,13 @@
         document.getElementById('wheel-tooltip').classList.remove('visible');
       }
 
-      // Dismiss tooltip on tap outside wheel
       document.addEventListener('click', (e) => {
         if (!e.target.closest('.wheel-container')) hideWheelTooltip();
       });
 
       /* ==================== FLAME TAB ==================== */
 
-      const FLAME_ICONS = {
-        sky: '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#fffef0" stroke-width="1.2" stroke-linecap="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>',
-        earth: '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#fffef0" stroke-width="1.2" stroke-linecap="round"><path d="M6 21c3-3 5-6 5-10a5 5 0 0 1 10 0c0 6-4 10-9 10H6z"/><path d="M6 21c0-3 1-6 3-8"/></svg>',
-        fire: '<img src="flame.png" width="40" height="40" style="opacity:0.7" />',
-        water: '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#fffef0" stroke-width="1.2" stroke-linecap="round"><path d="M12 2c-4 6-7 9-7 13a7 7 0 0 0 14 0c0-4-3-7-7-13z"/></svg>',
-        outdoor: '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#fffef0" stroke-width="1.2" stroke-linecap="round"><path d="M6 21c3-3 5-6 5-10a5 5 0 0 1 10 0c0 6-4 10-9 10H6z"/><path d="M6 21c0-3 1-6 3-8"/></svg>',
-      };
+      const FLAME_ICON = '<img src="sprig.png" width="40" height="40" style="opacity:0.8" draggable="false" />';
 
       const FLAME_BG = {
         sky: '#080010', earth: '#050f08', fire: '#120800', water: '#020d10', outdoor: '#050f08',
@@ -2370,7 +2368,7 @@
         else if (hour >= 17 && hour < 21) contextParts.push('evening');
         else contextParts.push('night');
 
-        document.getElementById('flame-icon').innerHTML = FLAME_ICONS[type] || FLAME_ICONS.sky;
+        document.getElementById('flame-icon').innerHTML = FLAME_ICON;
         document.getElementById('flame-text').textContent = suggestion;
         document.getElementById('flame-context').textContent = contextParts.join(' · ');
 
